@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { sounds } from '../audio/SoundEffects.js';
+import { HumanoidBuilder } from './HumanoidBuilder.js';
 
 export class Player {
     constructor(scene, camera, domElement) {
@@ -53,75 +54,40 @@ export class Player {
     }
 
     initMesh() {
-        this.mesh = new THREE.Group();
+        // Build Realistic Human Model matching reference image (Light blue dress shirt & dark slacks)
+        const human = HumanoidBuilder.createRealisticHumanMesh({
+            shirtColor: 0xa4c6eb, // Light blue dress shirt as in reference
+            pantsColor: 0x1e232a, // Charcoal dark slacks
+            shoesColor: 0x111317, // Black dress shoes
+            hairColor: 0xb5ada5,  // Styled hair as in reference
+            faceTexturePath: '/assets/guillo_face.png',
+            hasBadge: true
+        });
 
-        const loader = new THREE.TextureLoader();
-        const faceTex = loader.load('/assets/guillo_face.png');
-
-        // Head (Stylized rounded box / character)
-        const headGeo = new THREE.BoxGeometry(0.34, 0.36, 0.32);
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0xedc2a4, roughness: 0.6 });
-        const faceMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 });
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x221a15, roughness: 0.9 });
-
-        // Materials: right, left, top (hair), bottom, front (face), back (hair)
-        const headMaterials = [
-            skinMat, skinMat, hairMat, skinMat, faceMat, hairMat
-        ];
-        this.headMesh = new THREE.Mesh(headGeo, headMaterials);
-        this.headMesh.position.y = 1.55;
-        this.headMesh.castShadow = true;
-        this.mesh.add(this.headMesh);
+        this.mesh = human.group;
+        this.torsoGroup = human.torsoGroup;
+        this.headGroup = human.headGroup;
+        this.headMesh = human.headMesh;
+        this.leftArm = human.leftArm;
+        this.rightArm = human.rightArm;
+        this.leftLeg = human.leftLeg;
+        this.rightLeg = human.rightLeg;
 
         // Glasses rim
-        const glassGeo = new THREE.BoxGeometry(0.28, 0.08, 0.04);
+        const glassGeo = new THREE.BoxGeometry(0.24, 0.06, 0.03);
         const glassMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
         const glasses = new THREE.Mesh(glassGeo, glassMat);
-        glasses.position.set(0, 1.57, 0.17);
-        this.mesh.add(glasses);
+        glasses.position.set(0, 0, 0.16);
+        this.headGroup.add(glasses);
 
-        // Torso (Dark Polo Shirt from IMG_2245 / Red sweater variation)
-        const torsoGeo = new THREE.BoxGeometry(0.48, 0.58, 0.28);
-        const torsoMat = new THREE.MeshStandardMaterial({ color: 0x363a42, roughness: 0.7 });
-        this.torsoMesh = new THREE.Mesh(torsoGeo, torsoMat);
-        this.torsoMesh.position.y = 1.06;
-        this.torsoMesh.castShadow = true;
-        this.mesh.add(this.torsoMesh);
-
-        // Arms (With swing animation)
-        const armGeo = new THREE.BoxGeometry(0.12, 0.52, 0.14);
-        const armMat = new THREE.MeshStandardMaterial({ color: 0x363a42, roughness: 0.7 });
-
-        this.leftArm = new THREE.Mesh(armGeo, armMat);
-        this.leftArm.position.set(-0.31, 1.05, 0);
-        this.leftArm.castShadow = true;
-        this.mesh.add(this.leftArm);
-
-        this.rightArm = new THREE.Mesh(armGeo, armMat);
-        this.rightArm.position.set(0.31, 1.05, 0);
-        this.rightArm.castShadow = true;
-        this.mesh.add(this.rightArm);
-
-        // Legs (Black Trousers from IMG_2245)
-        const legGeo = new THREE.BoxGeometry(0.17, 0.7, 0.2);
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a20, roughness: 0.85 });
-
-        this.leftLeg = new THREE.Mesh(legGeo, legMat);
-        this.leftLeg.position.set(-0.13, 0.35, 0);
-        this.leftLeg.castShadow = true;
-        this.mesh.add(this.leftLeg);
-
-        this.rightLeg = new THREE.Mesh(legGeo, legMat);
-        this.rightLeg.position.set(0.13, 0.35, 0);
-        this.rightLeg.castShadow = true;
-        this.mesh.add(this.rightLeg);
-
-        // FirstBank Badge
-        const badgeGeo = new THREE.PlaneGeometry(0.08, 0.12);
-        const badgeMat = new THREE.MeshBasicMaterial({ color: 0x008850, side: THREE.DoubleSide });
-        const badge = new THREE.Mesh(badgeGeo, badgeMat);
-        badge.position.set(-0.11, 0.95, 0.15);
-        this.mesh.add(badge);
+        // N95 Mask (Toggled on when collected)
+        const maskGeo = new THREE.ConeGeometry(0.12, 0.14, 16);
+        const maskMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 });
+        this.maskMesh = new THREE.Mesh(maskGeo, maskMat);
+        this.maskMesh.rotation.x = Math.PI / 2;
+        this.maskMesh.position.set(0, -0.04, 0.15);
+        this.maskMesh.visible = false;
+        this.headGroup.add(this.maskMesh);
 
         // Carrying Item Holder in front of character (e.g. coffee, masks, sanitizer stack)
         this.itemHolder = new THREE.Group();

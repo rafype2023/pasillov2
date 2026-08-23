@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { sounds } from '../audio/SoundEffects.js';
+import { HumanoidBuilder } from './HumanoidBuilder.js';
 
-// Base NPC class with stylized arms and animated limbs
+// Base NPC class with realistic anatomical human or cyber android limbs
 export class BaseNPC {
-    constructor(scene, name, shirtColor, startPos, faceTexturePath = null) {
+    constructor(scene, name, shirtColor, startPos, faceTexturePath = null, isCyberAndroid = false) {
         this.scene = scene;
         this.name = name;
         this.position = startPos.clone();
@@ -12,32 +13,47 @@ export class BaseNPC {
         this.facingAngle = 0;
         this.isFalling = false;
         this.fallTimer = 0;
-        this.mesh = new THREE.Group();
+        this.isCyberAndroid = isCyberAndroid;
 
         this.initMesh(shirtColor, faceTexturePath);
         this.scene.add(this.mesh);
     }
 
     initMesh(shirtColor, faceTexturePath) {
-        // Head
-        const headGeo = new THREE.BoxGeometry(0.34, 0.36, 0.32);
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0xedc2a4, roughness: 0.6 });
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x332211, roughness: 0.9 });
-        
-        let faceMat = skinMat;
-        if (faceTexturePath) {
-            const loader = new THREE.TextureLoader();
-            const faceTex = loader.load(faceTexturePath);
-            faceMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 });
+        if (this.isCyberAndroid) {
+            // Build Sleek Titanium Cyber Android Cyborg with Glowing Arc Reactor
+            const android = HumanoidBuilder.createCyberAndroidMesh({
+                armorColor: 0x8f96a0,
+                glowColor: 0x00f0ff,
+                accentColor: 0x2d3440
+            });
+            this.mesh = android.group;
+            this.torso = android.torsoGroup;
+            this.head = android.headGroup;
+            this.leftArm = android.leftArm;
+            this.rightArm = android.rightArm;
+            this.leftLeg = android.leftLeg;
+            this.rightLeg = android.rightLeg;
+            this.reactorMesh = android.reactorMesh;
+        } else {
+            // Build Realistic Business Casual Human Character
+            const human = HumanoidBuilder.createRealisticHumanMesh({
+                shirtColor: shirtColor,
+                pantsColor: 0x1e232a,
+                shoesColor: 0x111317,
+                hairColor: 0x332822,
+                faceTexturePath: faceTexturePath,
+                hasBadge: true
+            });
+            this.mesh = human.group;
+            this.torso = human.torsoGroup;
+            this.head = human.headGroup;
+            this.headMesh = human.headMesh;
+            this.leftArm = human.leftArm;
+            this.rightArm = human.rightArm;
+            this.leftLeg = human.leftLeg;
+            this.rightLeg = human.rightLeg;
         }
-
-        // Box faces: [Right, Left, Top, Bottom, Front (+Z), Back]
-        const headMaterials = [skinMat, skinMat, hairMat, skinMat, faceMat, hairMat];
-
-        this.head = new THREE.Mesh(headGeo, headMaterials);
-        this.head.position.y = 1.55;
-        this.head.castShadow = true;
-        this.mesh.add(this.head);
 
         // Name Tag above head
         const canvas = document.createElement('canvas');
@@ -55,42 +71,8 @@ export class BaseNPC {
         const nameTex = new THREE.CanvasTexture(canvas);
         const nameMat = new THREE.MeshBasicMaterial({ map: nameTex, side: THREE.DoubleSide, transparent: true });
         this.nameTag = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.25), nameMat);
-        this.nameTag.position.y = 2.0;
+        this.nameTag.position.y = 2.1;
         this.mesh.add(this.nameTag);
-
-        // Torso
-        const torsoGeo = new THREE.BoxGeometry(0.48, 0.58, 0.28);
-        const torsoMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.7 });
-        this.torso = new THREE.Mesh(torsoGeo, torsoMat);
-        this.torso.position.y = 1.06;
-        this.torso.castShadow = true;
-        this.mesh.add(this.torso);
-
-        // Arms
-        const armGeo = new THREE.BoxGeometry(0.12, 0.52, 0.14);
-        this.leftArm = new THREE.Mesh(armGeo, torsoMat);
-        this.leftArm.position.set(-0.31, 1.05, 0);
-        this.leftArm.castShadow = true;
-        this.mesh.add(this.leftArm);
-
-        this.rightArm = new THREE.Mesh(armGeo, torsoMat);
-        this.rightArm.position.set(0.31, 1.05, 0);
-        this.rightArm.castShadow = true;
-        this.mesh.add(this.rightArm);
-
-        // Legs
-        const legGeo = new THREE.BoxGeometry(0.17, 0.7, 0.2);
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.85 });
-
-        this.leftLeg = new THREE.Mesh(legGeo, legMat);
-        this.leftLeg.position.set(-0.13, 0.35, 0);
-        this.leftLeg.castShadow = true;
-        this.mesh.add(this.leftLeg);
-
-        this.rightLeg = new THREE.Mesh(legGeo, legMat);
-        this.rightLeg.position.set(0.13, 0.35, 0);
-        this.rightLeg.castShadow = true;
-        this.mesh.add(this.rightLeg);
 
         this.mesh.position.copy(this.position);
     }
@@ -387,10 +369,10 @@ export class SneezerNPC extends BaseNPC {
     }
 }
 
-// 5. Hostile Archer NPC (Active Shooter with Recurve Bow in Corporate Attire)
+// 5. Hostile Archer NPC (Tactical Hunter Cyber Android with Glowing Arc Reactor & Bow)
 export class HostileNPC extends BaseNPC {
     constructor(scene, startPos, waypoints) {
-        super(scene, 'Tactical Archer 🏹', 0x16181c, startPos, '/v2_assets/archer_v2_face.png');
+        super(scene, 'Tactical Hunter 🏹', 0x8a929b, startPos, null, true); // Cyber Android Cyborg model
         this.waypoints = waypoints;
         this.currentWpIndex = 0;
         this.speed = 3.4;
