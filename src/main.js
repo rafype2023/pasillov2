@@ -192,19 +192,19 @@ export class Game {
         const levelData = [
             {
                 badge: 'NIVEL 1',
-                img: '/screens/level_1.png',
-                title: 'NIVEL 1: ESCAPE DE CUBÍCULOS',
+                img: '/v2_assets/scene_level1.png',
+                title: 'NIVEL 1: ESCAPE DE CUBÍCULOS (COVID-19)',
                 desc: 'Evita a los infectados que estornudan activamente hacia ti. Esquiva el aerosol viral, recoge mascarillas N95 y desinfectante, y corre hacia la estación segura que cambia cada 45 segundos.'
             },
             {
                 badge: 'NIVEL 2',
-                img: '/screens/level_2.png',
+                img: '/v2_assets/scene_level2.png',
                 title: 'NIVEL 2: CARRERA AL BUFFET',
-                desc: '¡Hay picadera y desayuno de cumpleaños en el lounge! Corre por los pasillos contra Fernan (que se cae), Alejandro (riéndose a carcajadas) y Hector para llegar primero a la mesa de snacks.'
+                desc: '¡Hay picadera y desayuno de cumpleaños en el lounge! Corre por los pasillos contra Fernan (que se cae cómicamente), Alejandro (riéndose con su celular) y Hector para llegar primero a la mesa de snacks.'
             },
             {
                 badge: 'NIVEL 3',
-                img: '/screens/level_3.png',
+                img: '/v2_assets/scene_level3.png',
                 title: 'NIVEL 3: HUYE HACIA LA SALIDA',
                 desc: '¡Alarma de emergencia activada! Tienes 8 segundos de ventaja para posicionarte. Agáchate detrás de los cubículos para protegerte de las flechas (4 flechazos te eliminan), rescata a tus compañeros y escapa por las escaleras.'
             }

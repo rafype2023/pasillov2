@@ -113,7 +113,7 @@ export class BaseNPC {
 // 1. Fernan: Always Falling! (El que siempre se cae)
 export class FernanNPC extends BaseNPC {
     constructor(scene, startPos, particles) {
-        super(scene, 'Fernan 😵', 0x2e6b9e, startPos, '/assets/fernan_face.png'); // Blue polo & real face
+        super(scene, 'Fernan 😵', 0x22252a, startPos, '/v2_assets/fernan_v2_face.png'); // Black polo & V2 face
         this.particles = particles;
         this.fallCooldown = 2.0; // Trips after 2 seconds in Level 2!
         this.isDown = false;
@@ -180,7 +180,7 @@ export class FernanNPC extends BaseNPC {
             return;
         }
 
-        // 4. Regular Running Movement toward destination
+        // 4. Regular Running Movement towards finish
         if (this.targetPos) {
             const dir = this.targetPos.clone().sub(this.position);
             dir.y = 0;
@@ -189,10 +189,10 @@ export class FernanNPC extends BaseNPC {
                 dir.normalize();
                 this.position.addScaledVector(dir, this.speed * delta);
                 this.mesh.position.copy(this.position);
-                this.facingAngle = Math.atan2(dir.x, dir.z);
-                this.mesh.rotation.y = this.facingAngle;
+                this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
-                const swing = Math.sin(Date.now() * 0.014) * 0.6;
+                // Run cycle
+                const swing = Math.sin(Date.now() * 0.01) * 0.55;
                 this.leftLeg.rotation.x = swing;
                 this.rightLeg.rotation.x = -swing;
                 this.leftArm.rotation.x = -swing;
@@ -219,7 +219,7 @@ export class FernanNPC extends BaseNPC {
 // 2. Alejandro: Always Laughing!
 export class AlejandroNPC extends BaseNPC {
     constructor(scene, startPos, particles) {
-        super(scene, 'Alejandro 😂', 0xcc7722, startPos, '/assets/alejandro_face.png'); // Standing face from caras.jpeg
+        super(scene, 'Alejandro 😂', 0x3a3d44, startPos, '/v2_assets/alejandro_v2_face.png'); // Patterned shirt & V2 face
         this.particles = particles;
         this.laughCooldown = 2.5 + Math.random() * 3.0;
         this.laughingTimer = 0;
@@ -274,7 +274,7 @@ export class AlejandroNPC extends BaseNPC {
 // 3. Hector: Tactical Coworker
 export class HectorNPC extends BaseNPC {
     constructor(scene, startPos) {
-        super(scene, 'Hector ⚡', 0x228844, startPos, '/assets/hector_face.png'); // Seated face from caras.jpeg
+        super(scene, 'Hector ⚡', 0x228844, startPos, '/assets/hector_face.png');
         this.speed = 4.6;
     }
 
@@ -304,7 +304,7 @@ export class HectorNPC extends BaseNPC {
 // 4. Sneezer NPC (COVID Hazard - Stalks and pursues our hero Guillo!)
 export class SneezerNPC extends BaseNPC {
     constructor(scene, startPos, waypoints, particles) {
-        super(scene, 'Sick Worker 🤧', 0x992222, startPos);
+        super(scene, 'Sick Worker 🤧', 0x3d352e, startPos, '/v2_assets/sneezer_v2_face.png');
         this.waypoints = waypoints;
         this.currentWpIndex = 0;
         this.particles = particles;
@@ -351,39 +351,58 @@ export class SneezerNPC extends BaseNPC {
                 this.rightLeg.rotation.x = -swing;
                 this.leftArm.rotation.x = -swing;
                 this.rightArm.rotation.x = swing;
-            } else if (!player && this.waypoints.length > 0) {
+            } else if (!player || this.position.distanceTo(player.position) > this.detectionRange) {
                 this.currentWpIndex = (this.currentWpIndex + 1) % this.waypoints.length;
             }
         }
 
-        // Periodic Sneeze aimed at player
+        // Sneeze attack timer
         this.sneezeTimer -= delta;
         if (this.sneezeTimer <= 0) {
-            this.sneezeTimer = 2.8 + Math.random() * 2.2;
-            sounds.playSneeze();
+            this.sneezeTimer = 2.5 + Math.random() * 2.5;
+            this.triggerSneeze(player);
+        }
+    }
 
-            const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
-            const sneezePos = this.position.clone().add(new THREE.Vector3(0, 1.4, 0));
-            this.particles.createSneezeBurst(sneezePos, forward);
+    triggerSneeze(player) {
+        sounds.playSneeze();
+
+        // Calculate sneeze emission direction
+        const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+        const sneezePos = this.position.clone().add(fwd.clone().multiplyScalar(0.6)).add(new THREE.Vector3(0, 1.45, 0));
+
+        if (this.particles) {
+            this.particles.createSneezeCloud(sneezePos, fwd);
+        }
+
+        // Viral exposure check on player
+        if (player && !player.isDead) {
+            const dist = this.position.distanceTo(player.position);
+            if (dist < 4.8) {
+                const exposure = player.isMasked ? 6 : 28;
+                player.infect(exposure);
+                sounds.playCough();
+            }
         }
     }
 }
 
-// 5. Hostile Archer / Threat in Level 3 (Shoots arrows at Guillo!)
+// 5. Hostile Archer NPC (Active Shooter with Recurve Bow in Corporate Attire)
 export class HostileNPC extends BaseNPC {
     constructor(scene, startPos, waypoints) {
-        super(scene, '🏹 TIRADOR', 0x1f1414, startPos); // Dark uniform
+        super(scene, 'Tactical Archer 🏹', 0x16181c, startPos, '/v2_assets/archer_v2_face.png');
         this.waypoints = waypoints;
         this.currentWpIndex = 0;
-        this.speed = 3.2;
-        this.shootTimer = 1.5 + Math.random();
+        this.speed = 3.4;
+        this.shootTimer = 1.6 + Math.random();
         this.shootCooldown = 2.4; // Shoots every 2.4 seconds
-        this.detectionRange = 22.0;
+        this.arrowSpeed = 16.0;
+        this.detectionRange = 26.0;
 
-        // Equip Bow in right hand
+        // Equip Recurve Bow in right hand
         const bowGroup = new THREE.Group();
         const bowCurveGeo = new THREE.TorusGeometry(0.28, 0.02, 8, 16, Math.PI);
-        const bowMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.6 });
+        const bowMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.5 });
         const bowMesh = new THREE.Mesh(bowCurveGeo, bowMat);
         bowMesh.rotation.z = Math.PI / 2;
         bowGroup.add(bowMesh);

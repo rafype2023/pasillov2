@@ -784,3 +784,98 @@ body, html {
     .level-grid { grid-template-columns: 1fr; }
     .level-intro-image-container { height: 220px; }
 }
+
+/* =========================================
+   MOBILE / CONSOLE TOUCH CONTROLS
+   ========================================= */
+.touch-controls-container {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.touch-joystick-base {
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(16, 24, 39, 0.75) 0%, rgba(2, 6, 23, 0.9) 100%);
+    border: 2px solid rgba(0, 229, 255, 0.4);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    touch-action: none;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+.touch-joystick-stick {
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, #00e5ff 0%, #0077b6 100%);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.8);
+    transition: transform 0.05s ease-out;
+}
+
+.touch-actions-cluster {
+    display: flex;
+    gap: 1rem;
+    pointer-events: auto;
+}
+
+.touch-action-btn {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    font-size: 1.4rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    transition: transform 0.1s ease, filter 0.1s ease;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.touch-action-btn:active {
+    transform: scale(0.92);
+    filter: brightness(1.25);
+}
+
+.btn-cam-orbit {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.btn-crouch {
+    background: linear-gradient(135deg, #374151, #1f2937);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+.btn-sprint {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #ffffff;
+    border-color: rgba(52, 211, 153, 0.6);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+}
+
+/* Hide touch joystick on large desktop screens by default unless touched */
+@media (min-width: 1025px) {
+    .touch-controls-container {
+        opacity: 0.85;
+    }
+}

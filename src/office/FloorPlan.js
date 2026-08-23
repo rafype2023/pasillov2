@@ -64,16 +64,79 @@ export class FloorPlan {
 
     createPerimeterWalls() {
         const wallMat = this.materials.get('wall');
+        const glassMat = this.materials.get('glass');
+        const trimMat = this.materials.get('cubicleTrim');
         const height = 3.2;
 
-        // North Perimeter Wall
-        this.addWall(0, height / 2, -14, 78, height, 0.3, wallMat);
-        // South Perimeter Wall
-        this.addWall(0, height / 2, 14, 78, height, 0.3, wallMat);
-        // West Perimeter Wall
+        // North Perimeter: Alternating Lower Wall + Upper Panoramic Glass
+        this.addWall(0, 0.45, -14, 78, 0.9, 0.3, wallMat);
+        this.addWall(0, 2.05, -14, 78, 2.3, 0.15, glassMat);
+
+        // South Perimeter: Lower Wall + Panoramic Glass
+        this.addWall(0, 0.45, 14, 78, 0.9, 0.3, wallMat);
+        this.addWall(0, 2.05, 14, 78, 2.3, 0.15, glassMat);
+
+        // West Perimeter: Solid Wall + Emergency Exit Framing
         this.addWall(-39, height / 2, 0, 0.3, height, 28, wallMat);
-        // East Perimeter Wall
+
+        // East Perimeter: Solid Wall + Corner Glass
         this.addWall(39, height / 2, 0, 0.3, height, 28, wallMat);
+
+        // Window mullions (vertical aluminum pillars)
+        for (let x = -36; x <= 36; x += 6) {
+            const colN = new THREE.Mesh(new THREE.BoxGeometry(0.2, height, 0.35), trimMat);
+            colN.position.set(x, height / 2, -14);
+            this.group.add(colN);
+
+            const colS = new THREE.Mesh(new THREE.BoxGeometry(0.2, height, 0.35), trimMat);
+            colS.position.set(x, height / 2, 14);
+            this.group.add(colS);
+        }
+
+        // 3D Exterior City Skyline (San Juan / Hato Rey Financial District Panorama)
+        this.createCitySkylineBackdrop();
+    }
+
+    createCitySkylineBackdrop() {
+        const skyGroup = new THREE.Group();
+        const buildingMat1 = new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.3, metalness: 0.7 });
+        const buildingMat2 = new THREE.MeshStandardMaterial({ color: 0x2c3545, roughness: 0.4, metalness: 0.5 });
+        const buildingMat3 = new THREE.MeshStandardMaterial({ color: 0x151c28, roughness: 0.2, metalness: 0.8 });
+        const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffe6aa, transparent: true, opacity: 0.75 });
+
+        const mats = [buildingMat1, buildingMat2, buildingMat3];
+
+        // North Skyscraper Skyline (Beyond Z: -22)
+        const northTowers = [
+            { x: -35, z: -28, w: 14, d: 14, h: 42 },
+            { x: -18, z: -32, w: 18, d: 16, h: 58 },
+            { x: 0, z: -26, w: 16, d: 14, h: 36 },
+            { x: 18, z: -30, w: 15, d: 15, h: 48 },
+            { x: 35, z: -27, w: 16, d: 14, h: 38 }
+        ];
+
+        // South Skyscraper Skyline (Beyond Z: +22)
+        const southTowers = [
+            { x: -32, z: 28, w: 15, d: 15, h: 46 },
+            { x: -14, z: 32, w: 18, d: 16, h: 54 },
+            { x: 5, z: 27, w: 16, d: 14, h: 40 },
+            { x: 22, z: 30, w: 16, d: 15, h: 50 },
+            { x: 38, z: 28, w: 14, d: 14, h: 36 }
+        ];
+
+        [...northTowers, ...southTowers].forEach((t, idx) => {
+            const mat = mats[idx % mats.length];
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(t.w, t.h, t.d), mat);
+            tower.position.set(t.x, t.h / 2 - 8, t.z);
+            skyGroup.add(tower);
+
+            // Roof antenna
+            const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 8, 8), mat);
+            antenna.position.set(t.x, t.h - 4, t.z);
+            skyGroup.add(antenna);
+        });
+
+        this.group.add(skyGroup);
     }
 
     addWall(x, y, z, w, h, d, material, isCubicle = false) {

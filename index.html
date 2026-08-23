@@ -70,18 +70,18 @@
     <div id="main-menu" class="glass-overlay" style="display: none;">
         <div class="menu-header">
             <div class="header-top-row">
-                <div class="brand-tag">FIRSTBANK • PISO 3</div>
+                <div class="brand-tag">FIRSTBANK • PISO 3 (V2 NEXT-GEN)</div>
                 <button id="btn-watch-intro" class="btn-watch-intro">▶️ Ver Video Intro</button>
             </div>
-            <h1>FBPR: OFFICE CHRONICLES</h1>
-            <p class="subtitle">Juego 3D en vista isométrica con Guillo, Fernan, Alejandro y Hector</p>
+            <h1>FBPR: OFFICE CHRONICLES V2</h1>
+            <p class="subtitle">Edición Next-Gen en 3D para Consolas, Móviles y PC • Guillo, Fernan, Alejandro y Hector</p>
         </div>
 
         <div class="level-grid">
             <!-- Level 1 Card -->
             <div class="level-card" data-level="0" onclick="window.openLevel(0)">
                 <div class="card-thumb-wrap">
-                    <img src="/screens/level_1.png" class="card-thumb-img" alt="Nivel 1">
+                    <img src="/v2_assets/scene_level1.png" class="card-thumb-img" alt="Nivel 1">
                     <div class="card-badge badge-green">NIVEL 1</div>
                 </div>
                 <h3>Brote de COVID-19</h3>
@@ -92,7 +92,7 @@
             <!-- Level 2 Card -->
             <div class="level-card" data-level="1" onclick="window.openLevel(1)">
                 <div class="card-thumb-wrap">
-                    <img src="/screens/level_2.png" class="card-thumb-img" alt="Nivel 2">
+                    <img src="/v2_assets/scene_level2.png" class="card-thumb-img" alt="Nivel 2">
                     <div class="card-badge badge-orange">NIVEL 2</div>
                 </div>
                 <h3>Carrera al Lounge</h3>
@@ -103,7 +103,7 @@
             <!-- Level 3 Card -->
             <div class="level-card" data-level="2" onclick="window.openLevel(2)">
                 <div class="card-thumb-wrap">
-                    <img src="/screens/level_3.png" class="card-thumb-img" alt="Nivel 3">
+                    <img src="/v2_assets/scene_level3.png" class="card-thumb-img" alt="Nivel 3">
                     <div class="card-badge badge-red">NIVEL 3</div>
                 </div>
                 <h3>Huye hacia la Salida</h3>
@@ -117,18 +117,18 @@
                 <img src="/assets/guillo_face.png" class="char-avatar" alt="Guillo">
                 <div>
                     <strong>Guillo</strong>
-                    <span>El Protagonista</span>
+                    <span>Protagonista</span>
                 </div>
             </div>
             <div class="char-pill">
-                <img src="/assets/fernan_face.png" class="char-avatar" alt="Fernan">
+                <img src="/v2_assets/fernan_v2_face.png" class="char-avatar" alt="Fernan">
                 <div>
                     <strong>Fernan</strong>
                     <span>Siempre se cae</span>
                 </div>
             </div>
             <div class="char-pill">
-                <img src="/assets/alejandro_face.png" class="char-avatar" alt="Alejandro">
+                <img src="/v2_assets/alejandro_v2_face.png" class="char-avatar" alt="Alejandro">
                 <div>
                     <strong>Alejandro</strong>
                     <span>Siempre se ríe</span>
@@ -141,15 +141,29 @@
                     <span>Velocista</span>
                 </div>
             </div>
+            <div class="char-pill">
+                <img src="/v2_assets/archer_v2_face.png" class="char-avatar" alt="Arquero">
+                <div>
+                    <strong>Tirador</strong>
+                    <span>Arco Táctico</span>
+                </div>
+            </div>
+            <div class="char-pill">
+                <img src="/v2_assets/sneezer_v2_face.png" class="char-avatar" alt="Infectado">
+                <div>
+                    <strong>Infectado</strong>
+                    <span>Aerosol Viral</span>
+                </div>
+            </div>
         </div>
 
         <div class="controls-guide">
-            <span><strong>W A S D</strong> Mover a Guillo</span>
+            <span><strong>W A S D / JOYSTICK</strong> Moverse</span>
             <span><strong>CLICK IZQ + ARRASTRAR</strong> Rotar Cámara 360°</span>
-            <span><strong>SHIFT</strong> Sprint</span>
-            <span><strong>C</strong> Agacharse (Cubículos)</span>
+            <span><strong>SHIFT / BOTÓN ⚡</strong> Sprint</span>
+            <span><strong>C / BOTÓN 🛡️</strong> Agacharse</span>
             <span><strong>RUEDA RATÓN</strong> Zoom In/Out</span>
-            <span><strong>V</strong> Isométrica / 3ra / 1ra Persona</span>
+            <span><strong>GAMEPAD</strong> Compatible Xbox / PS</span>
         </div>
     </div>
 
@@ -158,14 +172,6 @@
         <!-- Top-Left Player Status Panel -->
         <div class="hud-player-card">
             <div class="player-header-row">
-                <span id="hud-level-tag" class="level-title-gold">LEVEL 1</span>
-                <span class="level-xp-text">FBPR PISO 3</span>
-            </div>
-
-            <!-- Health / Infection Bar -->
-            <div class="hud-stat-group">
-                <div class="stat-label-row">
-                    <span id="hud-health-label">HEALTH</span>
                     <span id="hud-health-val">100%</span>
                 </div>
                 <div class="bar-track">
@@ -239,12 +245,23 @@
 
         <!-- Bottom Controls Indicator -->
         <div class="hud-bottom-bar">
-            <div class="control-badge">[W,A,S,D] Moverse</div>
-            <div class="control-badge">[SHIFT] Sprint</div>
-            <div class="control-badge">[C] Agacharse</div>
-            <div class="control-badge">[Q/E] Rotar Cámara</div>
-            <div class="control-badge">[Rueda Ratón] Zoom</div>
-            <div class="control-badge">[V] Cambiar Cámara</div>
+            <div class="control-badge">[W,A,S,D / Joystick] Moverse</div>
+            <div class="control-badge">[SHIFT / ⚡] Sprint</div>
+            <div class="control-badge">[C / 🛡️] Agacharse</div>
+            <div class="control-badge">[Arrastrar Ratón / 🎥] Rotar Cámara</div>
+            <div class="control-badge">[Rueda / Pinch] Zoom</div>
+        </div>
+
+        <!-- Mobile / Console On-Screen Touch Controls -->
+        <div id="mobile-touch-controls" class="touch-controls-container">
+            <div id="touch-joystick-zone" class="touch-joystick-base">
+                <div id="touch-joystick-thumb" class="touch-joystick-stick"></div>
+            </div>
+            <div class="touch-actions-cluster">
+                <button id="touch-btn-cam" class="touch-action-btn btn-cam-orbit" title="Cambiar Vista">🎥</button>
+                <button id="touch-btn-crouch" class="touch-action-btn btn-crouch" title="Agacharse">🛡️</button>
+                <button id="touch-btn-sprint" class="touch-action-btn btn-sprint" title="Sprint">⚡</button>
+            </div>
         </div>
     </div>
 

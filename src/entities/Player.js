@@ -42,10 +42,14 @@ export class Player {
 
         // Controls input
         this.keys = {};
+        this.touchMovement = { x: 0, y: 0 };
+        this.touchSprint = false;
+        this.touchCrouch = false;
         this.footstepTimer = 0;
 
         this.initMesh();
         this.initControls();
+        this.initMobileTouchControls();
     }
 
     initMesh() {
@@ -185,6 +189,92 @@ export class Player {
         }, { passive: true });
     }
 
+    initMobileTouchControls() {
+        // Virtual Joystick Container
+        const joyZone = document.getElementById('touch-joystick-zone');
+        const joyThumb = document.getElementById('touch-joystick-thumb');
+        const btnSprint = document.getElementById('touch-btn-sprint');
+        const btnCrouch = document.getElementById('touch-btn-crouch');
+        const btnCam = document.getElementById('touch-btn-cam');
+
+        if (joyZone && joyThumb) {
+            let joyActive = false;
+            let startX = 0;
+            let startY = 0;
+            const maxRadius = 45;
+
+            const handleJoyStart = (e) => {
+                const touch = e.touches ? e.touches[0] : e;
+                const rect = joyZone.getBoundingClientRect();
+                startX = rect.left + rect.width / 2;
+                startY = rect.top + rect.height / 2;
+                joyActive = true;
+            };
+
+            const handleJoyMove = (e) => {
+                if (!joyActive) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const dx = touch.clientX - startX;
+                const dy = touch.clientY - startY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const clampedDist = Math.min(dist, maxRadius);
+                const angle = Math.atan2(dy, dx);
+
+                const thumbX = Math.cos(angle) * clampedDist;
+                const thumbY = Math.sin(angle) * clampedDist;
+                joyThumb.style.transform = `translate(${thumbX}px, ${thumbY}px)`;
+
+                this.touchMovement.x = thumbX / maxRadius;
+                this.touchMovement.y = thumbY / maxRadius;
+            };
+
+            const handleJoyEnd = () => {
+                joyActive = false;
+                joyThumb.style.transform = `translate(0px, 0px)`;
+                this.touchMovement.x = 0;
+                this.touchMovement.y = 0;
+            };
+
+            joyZone.addEventListener('touchstart', handleJoyStart, { passive: true });
+            window.addEventListener('touchmove', handleJoyMove, { passive: true });
+            window.addEventListener('touchend', handleJoyEnd);
+            window.addEventListener('touchcancel', handleJoyEnd);
+        }
+
+        btnSprint?.addEventListener('touchstart', () => { this.touchSprint = true; }, { passive: true });
+        btnSprint?.addEventListener('touchend', () => { this.touchSprint = false; });
+
+        btnCrouch?.addEventListener('touchstart', () => { this.touchCrouch = !this.touchCrouch; }, { passive: true });
+        btnCam?.addEventListener('touchstart', () => { this.toggleCameraMode(); }, { passive: true });
+    }
+
+    pollGamepad(delta) {
+        if (!navigator.getGamepads) return { x: 0, z: 0, sprint: false, crouch: false };
+        const gamepads = navigator.getGamepads();
+        for (const gp of gamepads) {
+            if (gp && gp.connected) {
+                // Left stick movement
+                const lx = Math.abs(gp.axes[0]) > 0.15 ? gp.axes[0] : 0;
+                const lz = Math.abs(gp.axes[1]) > 0.15 ? gp.axes[1] : 0;
+
+                // Right stick camera orbit
+                if (Math.abs(gp.axes[2]) > 0.2) {
+                    this.isoYaw -= gp.axes[2] * delta * 3.0;
+                }
+                if (Math.abs(gp.axes[3]) > 0.2) {
+                    this.isoPitch = Math.max(0.18, Math.min(Math.PI / 2.1, this.isoPitch - gp.axes[3] * delta * 2.0));
+                }
+
+                // Buttons: A (0) = Sprint, B (1) = Crouch, Y (3) = Cam
+                const btnSprint = gp.buttons[0]?.pressed || gp.buttons[7]?.pressed; // A or RT
+                const btnCrouch = gp.buttons[1]?.pressed || gp.buttons[6]?.pressed; // B or LT
+
+                return { x: lx, z: lz, sprint: btnSprint, crouch: btnCrouch };
+            }
+        }
+        return { x: 0, z: 0, sprint: false, crouch: false };
+    }
+
     toggleCameraMode() {
         if (this.cameraMode === 'isometric') this.cameraMode = 'third';
         else if (this.cameraMode === 'third') this.cameraMode = 'first';
@@ -220,9 +310,12 @@ export class Player {
             this.boostTimer -= delta;
         }
 
-        // Crouch & Sprint
-        this.isCrouching = !!(this.keys['KeyC'] || this.keys['ControlLeft']);
-        const canSprint = !this.isCrouching && (this.stamina > 5) && (this.keys['ShiftLeft'] || this.keys['ShiftRight']);
+        // Gamepad polling
+        const gp = this.pollGamepad(delta);
+
+        // Crouch & Sprint (from Keyboard, Touch, or Gamepad)
+        this.isCrouching = !!(this.keys['KeyC'] || this.keys['ControlLeft'] || this.touchCrouch || gp.crouch);
+        const canSprint = !this.isCrouching && (this.stamina > 5) && (this.keys['ShiftLeft'] || this.keys['ShiftRight'] || this.touchSprint || gp.sprint);
         this.isSprinting = canSprint;
 
         let speed = 4.4;
@@ -241,16 +334,28 @@ export class Player {
             speed *= 1.35;
         }
 
-        // Raw input vector
+        // Combined Input (Keyboard + Virtual Joystick + Gamepad)
         let inputX = 0;
         let inputZ = 0;
+
         if (this.keys['KeyW'] || this.keys['ArrowUp']) inputZ -= 1;
         if (this.keys['KeyS'] || this.keys['ArrowDown']) inputZ += 1;
         if (this.keys['KeyA'] || this.keys['ArrowLeft']) inputX -= 1;
         if (this.keys['KeyD'] || this.keys['ArrowRight']) inputX += 1;
 
+        if (Math.abs(this.touchMovement.x) > 0.05 || Math.abs(this.touchMovement.y) > 0.05) {
+            inputX += this.touchMovement.x;
+            inputZ += this.touchMovement.y;
+        }
+
+        if (Math.abs(gp.x) > 0.1 || Math.abs(gp.z) > 0.1) {
+            inputX += gp.x;
+            inputZ += gp.z;
+        }
+
         if (inputX !== 0 || inputZ !== 0) {
-            const moveVec = new THREE.Vector3(inputX, 0, inputZ).normalize();
+            const moveVec = new THREE.Vector3(inputX, 0, inputZ);
+            if (moveVec.length() > 1.0) moveVec.normalize();
 
             // Rotate input relative to camera view
             if (this.cameraMode === 'isometric') {
