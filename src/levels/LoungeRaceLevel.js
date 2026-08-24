@@ -34,22 +34,23 @@ export class LoungeRaceLevel {
         this.rank = 1;
         this.leaderboard = [];
 
-        // 1. Spawn player at Start line in West wing corridor
-        const startLine = new THREE.Vector3(-32, 0, 0);
+        // 1. Spawn player at Start line in West wing
+        const startLine = new THREE.Vector3(-18, 0, 10);
+        this.finishTarget = new THREE.Vector3(16, 0, -2);
         this.player.spawn(startLine);
         this.player.stamina = 100;
 
         // 2. Spawn Racer NPCs side-by-side with balanced competitive speeds
-        this.fernan = new FernanNPC(this.scene, new THREE.Vector3(-32, 0, 2.5), this.particles);
-        this.fernan.speed = 3.8; // Fernan falls periodically
+        this.fernan = new FernanNPC(this.scene, new THREE.Vector3(-18, 0, 12), this.particles);
+        this.fernan.speed = 3.8;
         this.npcs.push(this.fernan);
 
-        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-32, 0, -2.5), this.particles);
-        this.alejandro.speed = 4.2; // Alejandro laughs
+        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-18, 0, 8), this.particles);
+        this.alejandro.speed = 4.2;
         this.npcs.push(this.alejandro);
 
-        this.hector = new HectorNPC(this.scene, new THREE.Vector3(-32, 0, -5.0));
-        this.hector.speed = 4.6; // Hector is fast
+        this.hector = new HectorNPC(this.scene, new THREE.Vector3(-18, 0, 6));
+        this.hector.speed = 4.6;
         this.npcs.push(this.hector);
 
         this.racers = [
@@ -68,10 +69,10 @@ export class LoungeRaceLevel {
 
     spawnCoffee() {
         const coffeePositions = [
-            new THREE.Vector3(-14, 0, 0),
-            new THREE.Vector3(-4, 0, 0),
-            new THREE.Vector3(6, 0, -2),
-            new THREE.Vector3(12, 0, -4)
+            new THREE.Vector3(-10, 0, 6),
+            new THREE.Vector3(-2, 0, 6),
+            new THREE.Vector3(6, 0, 4),
+            new THREE.Vector3(12, 0, 0)
         ];
 
         coffeePositions.forEach(pos => {

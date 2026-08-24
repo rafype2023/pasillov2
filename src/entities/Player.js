@@ -10,7 +10,14 @@ export class Player {
 
         this.position = new THREE.Vector3(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
+        this.verticalVelocity = 0;
+        this.gravity = -24.0;
+        this.jumpForce = 8.5;
+        this.isGrounded = true;
         this.facingAngle = 0;
+
+        // Current Skin: 'human' (Business Casual) or 'cyber' (Titanium Cyber Android)
+        this.currentSkin = 'human';
 
         // Stats
         this.health = 100;
@@ -26,11 +33,11 @@ export class Player {
         this.maxCarrying = 8;
         this.isDead = false;
 
-        // Free 3D Orbit Camera (Mouse Drag / WASD)
+        // Free 3D Orbit Camera (Interior tactical CCTV & Third Person)
         this.cameraMode = 'isometric'; // 'isometric', 'third', 'first'
-        this.isoDistance = 14.5;
-        this.isoPitch = Math.PI / 3.4; // ~53 degrees tilt
-        this.isoYaw = 0; // Rotates 360 deg via Mouse Drag or Q/E
+        this.isoDistance = 9.8; // Interior distance beneath ceiling
+        this.isoPitch = 0.32; // ~18.5 degrees tilt (matching reference interior perspective)
+        this.isoYaw = 0; // Aligned directly down the central Spine channel
         this.zoomLevel = 1.0;
         this.isDraggingMouse = false;
         this.previousMouseX = 0;
@@ -46,7 +53,9 @@ export class Player {
         this.touchMovement = { x: 0, y: 0 };
         this.touchSprint = false;
         this.touchCrouch = false;
+        this.touchJump = false;
         this.footstepTimer = 0;
+        this.animTime = 0;
 
         this.initMesh();
         this.initControls();
@@ -54,47 +63,69 @@ export class Player {
     }
 
     initMesh() {
-        // Build Realistic Human Model matching reference image (Light blue dress shirt & dark slacks)
-        const human = HumanoidBuilder.createRealisticHumanMesh({
-            shirtColor: 0xa4c6eb, // Light blue dress shirt as in reference
-            pantsColor: 0x1e232a, // Charcoal dark slacks
-            shoesColor: 0x111317, // Black dress shoes
-            hairColor: 0xb5ada5,  // Styled hair as in reference
-            faceTexturePath: '/assets/guillo_face.png',
-            hasBadge: true
-        });
+        if (this.mesh) {
+            this.scene.remove(this.mesh);
+        }
 
-        this.mesh = human.group;
-        this.torsoGroup = human.torsoGroup;
-        this.headGroup = human.headGroup;
-        this.headMesh = human.headMesh;
-        this.leftArm = human.leftArm;
-        this.rightArm = human.rightArm;
-        this.leftLeg = human.leftLeg;
-        this.rightLeg = human.rightLeg;
+        if (this.currentSkin === 'cyber') {
+            // Build Sleek Titanium Cyber Android Cyborg with Glowing Cyan Arc Reactor
+            this.modelParts = HumanoidBuilder.createCyberAndroidMesh({
+                armorColor: 0x8a929b,
+                glowColor: 0x00f0ff,
+                accentColor: 0x323a46
+            });
+        } else {
+            // Build Realistic Human Model matching reference image (Light blue dress shirt & dark slacks)
+            this.modelParts = HumanoidBuilder.createRealisticHumanMesh({
+                shirtColor: 0xa4c6eb, // Light blue dress shirt
+                pantsColor: 0x1e232a, // Charcoal dark slacks
+                shoesColor: 0x111317, // Black dress shoes
+                hairColor: 0xb5ada5,  // Styled wavy grey/blonde hair
+                faceTexturePath: '/assets/guillo_face.png',
+                hasBadge: true
+            });
+        }
 
-        // Glasses rim
-        const glassGeo = new THREE.BoxGeometry(0.24, 0.06, 0.03);
-        const glassMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-        const glasses = new THREE.Mesh(glassGeo, glassMat);
-        glasses.position.set(0, 0, 0.16);
-        this.headGroup.add(glasses);
+        this.mesh = this.modelParts.group;
+        this.torsoGroup = this.modelParts.torsoGroup;
+        this.headGroup = this.modelParts.headGroup;
+        this.headMesh = this.modelParts.headMesh;
 
-        // N95 Mask (Toggled on when collected)
+        // Glasses rim (if human)
+        if (this.currentSkin === 'human') {
+            const glassGeo = new THREE.BoxGeometry(0.24, 0.06, 0.03);
+            const glassMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+            const glasses = new THREE.Mesh(glassGeo, glassMat);
+            glasses.position.set(0, 0, 0.16);
+            this.headGroup.add(glasses);
+        }
+
+        // N95 Mask (Toggled on when collected in Level 1)
         const maskGeo = new THREE.ConeGeometry(0.12, 0.14, 16);
         const maskMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 });
         this.maskMesh = new THREE.Mesh(maskGeo, maskMat);
         this.maskMesh.rotation.x = Math.PI / 2;
         this.maskMesh.position.set(0, -0.04, 0.15);
-        this.maskMesh.visible = false;
+        this.maskMesh.visible = this.isMasked;
         this.headGroup.add(this.maskMesh);
 
-        // Carrying Item Holder in front of character (e.g. coffee, masks, sanitizer stack)
+        // Carrying Item Holder in front of character
         this.itemHolder = new THREE.Group();
         this.itemHolder.position.set(0, 1.0, 0.3);
         this.mesh.add(this.itemHolder);
 
+        this.mesh.position.copy(this.position);
         this.scene.add(this.mesh);
+    }
+
+    setSkin(skinType) {
+        if (skinType !== 'human' && skinType !== 'cyber') return;
+        this.currentSkin = skinType;
+        this.initMesh();
+    }
+
+    toggleSkin() {
+        this.setSkin(this.currentSkin === 'human' ? 'cyber' : 'human');
     }
 
     initControls() {
@@ -103,11 +134,17 @@ export class Player {
             if (e.code === 'KeyV') {
                 this.toggleCameraMode();
             }
+            if (e.code === 'KeyT' || e.code === 'KeyK') {
+                this.toggleSkin();
+            }
             if (e.code === 'KeyQ') {
                 this.isoYaw += Math.PI / 4;
             }
             if (e.code === 'KeyE') {
                 this.isoYaw -= Math.PI / 4;
+            }
+            if (e.code === 'Space') {
+                this.jump();
             }
         });
 
@@ -117,7 +154,6 @@ export class Player {
 
         // 3D Mouse Drag Orbit (Left Mouse Button Drag)
         window.addEventListener('pointerdown', (e) => {
-            // Only drag on canvas / game area (button 0 = left click)
             if (e.button === 0 && e.target && (e.target.tagName === 'CANVAS' || e.target.id === 'game-container')) {
                 this.isDraggingMouse = true;
                 this.previousMouseX = e.clientX;
@@ -156,12 +192,13 @@ export class Player {
     }
 
     initMobileTouchControls() {
-        // Virtual Joystick Container
         const joyZone = document.getElementById('touch-joystick-zone');
         const joyThumb = document.getElementById('touch-joystick-thumb');
         const btnSprint = document.getElementById('touch-btn-sprint');
         const btnCrouch = document.getElementById('touch-btn-crouch');
         const btnCam = document.getElementById('touch-btn-cam');
+        const btnJump = document.getElementById('touch-btn-jump');
+        const btnSkin = document.getElementById('touch-btn-skin');
 
         if (joyZone && joyThumb) {
             let joyActive = false;
@@ -211,19 +248,19 @@ export class Player {
         btnSprint?.addEventListener('touchend', () => { this.touchSprint = false; });
 
         btnCrouch?.addEventListener('touchstart', () => { this.touchCrouch = !this.touchCrouch; }, { passive: true });
+        btnJump?.addEventListener('touchstart', () => { this.jump(); }, { passive: true });
+        btnSkin?.addEventListener('touchstart', () => { this.toggleSkin(); }, { passive: true });
         btnCam?.addEventListener('touchstart', () => { this.toggleCameraMode(); }, { passive: true });
     }
 
     pollGamepad(delta) {
-        if (!navigator.getGamepads) return { x: 0, z: 0, sprint: false, crouch: false };
+        if (!navigator.getGamepads) return { x: 0, z: 0, sprint: false, crouch: false, jump: false, skin: false };
         const gamepads = navigator.getGamepads();
         for (const gp of gamepads) {
             if (gp && gp.connected) {
-                // Left stick movement
                 const lx = Math.abs(gp.axes[0]) > 0.15 ? gp.axes[0] : 0;
                 const lz = Math.abs(gp.axes[1]) > 0.15 ? gp.axes[1] : 0;
 
-                // Right stick camera orbit
                 if (Math.abs(gp.axes[2]) > 0.2) {
                     this.isoYaw -= gp.axes[2] * delta * 3.0;
                 }
@@ -231,9 +268,14 @@ export class Player {
                     this.isoPitch = Math.max(0.18, Math.min(Math.PI / 2.1, this.isoPitch - gp.axes[3] * delta * 2.0));
                 }
 
-                // Buttons: A (0) = Sprint, B (1) = Crouch, Y (3) = Cam
+                // Buttons: A (0) = Sprint/Jump, B (1) = Crouch, X (2) = Jump, Y (3) = Cam, LB (4) = Skin
                 const btnSprint = gp.buttons[0]?.pressed || gp.buttons[7]?.pressed; // A or RT
                 const btnCrouch = gp.buttons[1]?.pressed || gp.buttons[6]?.pressed; // B or LT
+                const btnJump = gp.buttons[2]?.pressed; // X
+                const btnSkin = gp.buttons[4]?.pressed; // LB
+
+                if (btnJump && this.isGrounded) this.jump();
+                if (btnSkin) this.toggleSkin();
 
                 return { x: lx, z: lz, sprint: btnSprint, crouch: btnCrouch };
             }
@@ -241,18 +283,30 @@ export class Player {
         return { x: 0, z: 0, sprint: false, crouch: false };
     }
 
+    jump() {
+        if (!this.isGrounded || this.isDead) return;
+        this.isGrounded = false;
+        this.verticalVelocity = this.jumpForce;
+        if (sounds.playJump) sounds.playJump();
+    }
+
     toggleCameraMode() {
         if (this.cameraMode === 'isometric') this.cameraMode = 'third';
         else if (this.cameraMode === 'third') this.cameraMode = 'first';
         else this.cameraMode = 'isometric';
 
-        this.headMesh.visible = (this.cameraMode !== 'first');
+        if (this.headMesh) {
+            this.headMesh.visible = (this.cameraMode !== 'first');
+        }
     }
 
     spawn(spawnVec) {
         this.position.copy(spawnVec);
+        this.position.y = 0;
         this.mesh.position.copy(this.position);
         this.velocity.set(0, 0, 0);
+        this.verticalVelocity = 0;
+        this.isGrounded = true;
         this.health = 100;
         this.infection = 0;
         this.stamina = 100;
@@ -263,13 +317,34 @@ export class Player {
         this.carryingCount = 0;
     }
 
+    infect(amount) {
+        if (this.isDead) return;
+        this.infection = Math.min(100, this.infection + amount);
+        if (this.infection >= 100) {
+            this.die();
+        }
+    }
+
+    die() {
+        this.isDead = true;
+        this.velocity.set(0, 0, 0);
+        this.mesh.rotation.x = -Math.PI / 2;
+        this.position.y = 0.2;
+        this.mesh.position.copy(this.position);
+    }
+
     update(delta, colliders = []) {
         if (this.isDead) return;
+
+        this.animTime += delta;
 
         // Timers
         if (this.maskTimer > 0) {
             this.maskTimer -= delta;
-            if (this.maskTimer <= 0) this.isMasked = false;
+            if (this.maskTimer <= 0) {
+                this.isMasked = false;
+                if (this.maskMesh) this.maskMesh.visible = false;
+            }
         }
 
         if (this.boostTimer > 0) {
@@ -279,8 +354,20 @@ export class Player {
         // Gamepad polling
         const gp = this.pollGamepad(delta);
 
-        // Crouch & Sprint (from Keyboard, Touch, or Gamepad)
-        this.isCrouching = !!(this.keys['KeyC'] || this.keys['ControlLeft'] || this.touchCrouch || gp.crouch);
+        // Jump physics & gravity
+        if (!this.isGrounded) {
+            this.verticalVelocity += this.gravity * delta;
+            this.position.y += this.verticalVelocity * delta;
+
+            if (this.position.y <= 0) {
+                this.position.y = 0;
+                this.verticalVelocity = 0;
+                this.isGrounded = true;
+            }
+        }
+
+        // Crouch & Sprint
+        this.isCrouching = this.isGrounded && !!(this.keys['KeyC'] || this.keys['ControlLeft'] || this.touchCrouch || gp.crouch);
         const canSprint = !this.isCrouching && (this.stamina > 5) && (this.keys['ShiftLeft'] || this.keys['ShiftRight'] || this.touchSprint || gp.sprint);
         this.isSprinting = canSprint;
 
@@ -288,9 +375,9 @@ export class Player {
         if (this.isCrouching) {
             speed = 2.2;
         } else if (this.stamina <= 0) {
-            speed = 1.9; // Exhausted from virus exposure / lack of stamina!
+            speed = 2.0;
         } else if (this.isSprinting) {
-            speed = 7.8;
+            speed = 8.0;
             this.stamina = Math.max(0, this.stamina - delta * 18);
         } else {
             this.stamina = Math.min(this.maxStamina, this.stamina + delta * 14);
@@ -319,7 +406,9 @@ export class Player {
             inputZ += gp.z;
         }
 
-        if (inputX !== 0 || inputZ !== 0) {
+        const isMoving = (inputX !== 0 || inputZ !== 0);
+
+        if (isMoving) {
             const moveVec = new THREE.Vector3(inputX, 0, inputZ);
             if (moveVec.length() > 1.0) moveVec.normalize();
 
@@ -338,36 +427,34 @@ export class Player {
             while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
             this.facingAngle += angleDiff * Math.min(1.0, delta * 14);
 
-            // Limb Swing animation
-            const swing = Math.sin(Date.now() * 0.011 * (speed / 4)) * 0.5;
-            this.leftLeg.rotation.x = swing;
-            this.rightLeg.rotation.x = -swing;
-            this.leftArm.rotation.x = -swing;
-            this.rightArm.rotation.x = swing;
-
-            // Footsteps sound
-            this.footstepTimer += delta * (speed / 4);
-            if (this.footstepTimer > 0.32) {
-                this.footstepTimer = 0;
-                sounds.playFootstep();
+            // Footstep audio
+            if (this.isGrounded) {
+                this.footstepTimer += delta * (speed / 4);
+                if (this.footstepTimer > 0.32) {
+                    this.footstepTimer = 0;
+                    sounds.playFootstep();
+                }
             }
         } else {
             this.velocity.x = 0;
             this.velocity.z = 0;
-            this.leftLeg.rotation.x = 0;
-            this.rightLeg.rotation.x = 0;
-            this.leftArm.rotation.x = 0;
-            this.rightArm.rotation.x = 0;
         }
+
+        // Determine pose state
+        let poseState = 'idle';
+        if (!this.isGrounded) {
+            poseState = 'jump';
+        } else if (this.isCrouching) {
+            poseState = 'crouch';
+        } else if (isMoving) {
+            poseState = 'run';
+        }
+
+        // Apply Next-Gen High-Fidelity Kinematic Pose matching reference image
+        HumanoidBuilder.applyPose(this.modelParts, poseState, this.animTime, speed);
 
         // Apply Collision against FloorPlan obstacles
         this.applyCollision(delta, colliders);
-
-        // Crouch height scaling
-        const targetH = this.isCrouching ? 0.65 : 1.0;
-        this.torsoMesh.scale.y = THREE.MathUtils.lerp(this.torsoMesh.scale.y, targetH, delta * 12);
-        this.torsoMesh.position.y = this.isCrouching ? 0.78 : 1.06;
-        this.headMesh.position.y = this.isCrouching ? 1.2 : 1.55;
 
         // Position and orient mesh
         this.mesh.position.copy(this.position);
@@ -419,7 +506,6 @@ export class Player {
 
     updateCamera(delta) {
         if (this.cameraMode === 'isometric') {
-            // Free 3D Spherical Orbit Camera (Drag with Left Mouse Button / WASD)
             const dist = this.isoDistance * this.zoomLevel;
             const horizDist = dist * Math.cos(this.isoPitch);
             const vertHeight = dist * Math.sin(this.isoPitch);
@@ -434,15 +520,13 @@ export class Player {
             this.camera.position.lerp(targetCamPos, delta * 12);
             this.camera.lookAt(this.position.x, this.position.y + 0.7, this.position.z);
         } else if (this.cameraMode === 'third') {
-            // Third Person Over-Shoulder
             const offset = new THREE.Vector3(0, 2.0, 3.8);
             offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.facingAngle);
             const targetCamPos = this.position.clone().add(offset);
             this.camera.position.lerp(targetCamPos, delta * 10);
             this.camera.lookAt(this.position.x, this.position.y + 1.2, this.position.z);
         } else {
-            // First Person
-            this.camera.position.set(this.position.x, this.isCrouching ? 1.2 : 1.6, this.position.z);
+            this.camera.position.set(this.position.x, this.isCrouching ? 1.1 : 1.6, this.position.z);
             this.camera.rotation.set(0, this.facingAngle, 0, 'YXZ');
         }
     }

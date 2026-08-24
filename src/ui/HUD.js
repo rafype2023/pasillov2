@@ -8,6 +8,9 @@ export class HUD {
         this.missionTime = 15 * 60; // 15:00 countdown timer
         this.modalActive = false;
 
+        this.planoImg = new Image();
+        this.planoImg.src = '/assets/plano_map.png';
+
         this.initEventListeners();
     }
 
@@ -16,6 +19,13 @@ export class HUD {
             const muted = sounds.toggleMute();
             const btn = document.getElementById('btn-mute');
             if (btn) btn.innerText = muted ? '🔇 Silenciado' : '🔊 Sonido';
+        });
+
+        document.getElementById('btn-skin')?.addEventListener('click', () => {
+            if (this.game.player) {
+                this.game.player.toggleSkin();
+                this.updateSkinButton();
+            }
         });
 
         document.getElementById('btn-cam')?.addEventListener('click', () => {
@@ -41,6 +51,16 @@ export class HUD {
         });
     }
 
+    updateSkinButton() {
+        const btn = document.getElementById('btn-skin');
+        const badge = document.getElementById('hud-skin-badge');
+        if (this.game.player) {
+            const isCyber = this.game.player.currentSkin === 'cyber';
+            if (btn) btn.innerText = isCyber ? '👔 Skin: Humano' : '🤖 Skin: Cyber';
+            if (badge) badge.innerText = isCyber ? '⚡ Cyber Android' : '👔 Humano Casual';
+        }
+    }
+
     updateCamButton() {
         const btn = document.getElementById('btn-cam');
         if (btn && this.game.player) {
@@ -54,7 +74,8 @@ export class HUD {
     update(levelIndex, currentLevel, player) {
         if (!player || !currentLevel) return;
 
-        // Level tag
+        // Skin & Level tag
+        this.updateSkinButton();
         const levelTag = document.getElementById('hud-level-tag');
         if (levelTag) levelTag.innerText = `LEVEL ${levelIndex + 1}`;
 
@@ -161,88 +182,47 @@ export class HUD {
 
         ctx.clearRect(0, 0, w, h);
 
-        const mapX = (x) => ((x + 32) / 64) * (w - 16) + 8;
-        const mapY = (z) => ((z + 22) / 44) * (h - 16) + 8;
-
-        // Background
-        ctx.fillStyle = '#0f0c09';
+        // Dark Blueprint Background
+        ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, w, h);
-        ctx.strokeStyle = 'rgba(184, 142, 75, 0.4)';
+
+        // Draw Authentic Floorplan Map Image (/assets/plano_map.png)
+        if (this.planoImg && this.planoImg.complete && this.planoImg.naturalWidth > 0) {
+            ctx.globalAlpha = 0.60;
+            ctx.drawImage(this.planoImg, 4, 4, w - 8, h - 8);
+            ctx.globalAlpha = 1.0;
+        }
+
+        const mapX = (x) => ((x + 28) / 56) * (w - 16) + 8;
+        const mapY = (z) => ((z + 20) / 40) * (h - 16) + 8;
+
+        // Central Spine (Highlighted in Red CAD zone matching reference image)
+        const spineX1 = mapX(-3.0);
+        const spineX2 = mapX(3.0);
+        const spineY1 = mapY(-9);
+        const spineY2 = mapY(9);
+
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.75)';
+        ctx.fillRect(spineX1, spineY1, spineX2 - spineX1, spineY2 - spineY1);
+
+        ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(4, 4, w - 8, h - 8);
+        ctx.strokeRect(spineX1, spineY1, spineX2 - spineX1, spineY2 - spineY1);
 
-        // Draw Lounge Area
-        ctx.fillStyle = 'rgba(230, 190, 109, 0.2)';
-        ctx.fillRect(mapX(12), mapY(-12), mapX(30) - mapX(12), mapY(4) - mapY(-12));
+        // Draw Player position as a pulsing white beacon
+        const px = mapX(player.position.x);
+        const py = mapY(player.position.z);
+        const pulse = 3 + Math.sin(Date.now() * 0.01) * 1.5;
 
-        // Draw Level 1 Dynamic Safe Station Beacon on Minimap (Green pulsing beacon)
-        if (levelIndex === 0 && currentLevel && currentLevel.safeStationPos) {
-            const sx = mapX(currentLevel.safeStationPos.x);
-            const sy = mapY(currentLevel.safeStationPos.z);
-            const pulse = 4 + Math.sin(Date.now() * 0.008) * 3;
-
-            ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
-            ctx.beginPath();
-            ctx.arc(sx, sy, pulse + 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#00ff88';
-            ctx.beginPath();
-            ctx.arc(sx, sy, 5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Draw Exits / Stairwells (Red)
-        ctx.fillStyle = '#ff3344';
-        if (this.game.floorPlan) {
-            this.game.floorPlan.exits.forEach(ex => {
-                ctx.fillRect(mapX(ex.pos.x) - 3, mapY(ex.pos.z) - 3, 6, 6);
-            });
-        }
-
-        // Draw "Usted Está Aquí"
-        ctx.fillStyle = '#00aa55';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.beginPath();
-        ctx.arc(mapX(-2), mapY(0), 3, 0, Math.PI * 2);
+        ctx.arc(px, py, pulse + 3, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw NPCs
-        if (currentLevel && currentLevel.npcs) {
-            currentLevel.npcs.forEach(npc => {
-                ctx.fillStyle = npc.name.includes('Fernan') ? '#389cd4' : (npc.name.includes('Alejandro') ? '#e6be6d' : '#00dd66');
-                ctx.beginPath();
-                ctx.arc(mapX(npc.position.x), mapY(npc.position.z), 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Draw Hostiles in Level 3
-        if (levelIndex === 2 && currentLevel.hostiles) {
-            currentLevel.hostiles.forEach(hostile => {
-                ctx.fillStyle = '#ff1111';
-                ctx.beginPath();
-                ctx.arc(mapX(hostile.position.x), mapY(hostile.position.z), 3.5, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Draw Player (Guillo)
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(mapX(player.position.x), mapY(player.position.z), 4.5, 0, Math.PI * 2);
+        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
         ctx.fill();
-
-        // Direction pointer
-        const angle = player.facingAngle;
-        ctx.strokeStyle = '#e6be6d';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(mapX(player.position.x), mapY(player.position.z));
-        ctx.lineTo(
-            mapX(player.position.x) + Math.sin(angle) * 8,
-            mapY(player.position.z) + Math.cos(angle) * 8
-        );
-        ctx.stroke();
     }
 
     showVictory(levelIndex, currentLevel) {

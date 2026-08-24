@@ -14,6 +14,7 @@ export class BaseNPC {
         this.isFalling = false;
         this.fallTimer = 0;
         this.isCyberAndroid = isCyberAndroid;
+        this.animTime = Math.random() * 10;
 
         this.initMesh(shirtColor, faceTexturePath);
         this.scene.add(this.mesh);
@@ -22,22 +23,14 @@ export class BaseNPC {
     initMesh(shirtColor, faceTexturePath) {
         if (this.isCyberAndroid) {
             // Build Sleek Titanium Cyber Android Cyborg with Glowing Arc Reactor
-            const android = HumanoidBuilder.createCyberAndroidMesh({
-                armorColor: 0x8f96a0,
+            this.modelParts = HumanoidBuilder.createCyberAndroidMesh({
+                armorColor: 0x8a929b,
                 glowColor: 0x00f0ff,
-                accentColor: 0x2d3440
+                accentColor: 0x323a46
             });
-            this.mesh = android.group;
-            this.torso = android.torsoGroup;
-            this.head = android.headGroup;
-            this.leftArm = android.leftArm;
-            this.rightArm = android.rightArm;
-            this.leftLeg = android.leftLeg;
-            this.rightLeg = android.rightLeg;
-            this.reactorMesh = android.reactorMesh;
         } else {
             // Build Realistic Business Casual Human Character
-            const human = HumanoidBuilder.createRealisticHumanMesh({
+            this.modelParts = HumanoidBuilder.createRealisticHumanMesh({
                 shirtColor: shirtColor,
                 pantsColor: 0x1e232a,
                 shoesColor: 0x111317,
@@ -45,15 +38,16 @@ export class BaseNPC {
                 faceTexturePath: faceTexturePath,
                 hasBadge: true
             });
-            this.mesh = human.group;
-            this.torso = human.torsoGroup;
-            this.head = human.headGroup;
-            this.headMesh = human.headMesh;
-            this.leftArm = human.leftArm;
-            this.rightArm = human.rightArm;
-            this.leftLeg = human.leftLeg;
-            this.rightLeg = human.rightLeg;
         }
+
+        this.mesh = this.modelParts.group;
+        this.torso = this.modelParts.torsoGroup;
+        this.head = this.modelParts.headGroup;
+        this.leftArm = this.modelParts.leftArm;
+        this.rightArm = this.modelParts.rightArm;
+        this.leftLeg = this.modelParts.leftLeg;
+        this.rightLeg = this.modelParts.rightLeg;
+        this.reactorMesh = this.modelParts.reactorMesh;
 
         // Name Tag above head
         const canvas = document.createElement('canvas');
@@ -82,6 +76,7 @@ export class BaseNPC {
     }
 
     update(delta, camera) {
+        this.animTime += delta;
         if (this.nameTag && camera) {
             this.nameTag.lookAt(camera.position);
         }
@@ -112,27 +107,20 @@ export class FernanNPC extends BaseNPC {
         if (this.isDown) {
             this.fallTimer -= delta;
 
-            // Comedic leg kicks while trying to get up from the floor
             const kick = Math.sin(Date.now() * 0.025) * 0.6;
             this.leftLeg.rotation.x = kick;
             this.rightLeg.rotation.x = -kick;
             this.leftArm.rotation.z = Math.PI / 2.5;
             this.rightArm.rotation.z = -Math.PI / 2.5;
 
-            // Keep body flat on floor surface (y = 0.22m)
             this.mesh.position.set(this.position.x, 0.22, this.position.z);
             this.mesh.rotation.x = -Math.PI / 2;
 
             if (this.fallTimer <= 0) {
-                // Recover and stand back up!
                 this.isDown = false;
                 this.mesh.rotation.x = 0;
                 this.mesh.position.y = 0;
-                this.leftArm.rotation.z = 0;
-                this.rightArm.rotation.z = 0;
-                this.leftLeg.rotation.x = 0;
-                this.rightLeg.rotation.x = 0;
-                this.fallCooldown = 3.2 + Math.random() * 2.5; // Falls again soon!
+                this.fallCooldown = 3.2 + Math.random() * 2.5;
             }
             return;
         }
@@ -141,7 +129,6 @@ export class FernanNPC extends BaseNPC {
         if (this.isStumbling) {
             this.stumbleTimer -= delta;
 
-            // Wild wobble and arm flailing
             this.mesh.rotation.z = Math.sin(Date.now() * 0.035) * 0.45;
             this.leftArm.rotation.x = Math.sin(Date.now() * 0.04) * 1.5;
             this.rightArm.rotation.x = -Math.sin(Date.now() * 0.04) * 1.5;
@@ -158,7 +145,7 @@ export class FernanNPC extends BaseNPC {
         this.fallCooldown -= delta;
         if (this.fallCooldown <= 0) {
             this.isStumbling = true;
-            this.stumbleTimer = 0.55; // 0.55s stumble animation before crash
+            this.stumbleTimer = 0.55;
             return;
         }
 
@@ -173,13 +160,12 @@ export class FernanNPC extends BaseNPC {
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
-                // Run cycle
-                const swing = Math.sin(Date.now() * 0.01) * 0.55;
-                this.leftLeg.rotation.x = swing;
-                this.rightLeg.rotation.x = -swing;
-                this.leftArm.rotation.x = -swing;
-                this.rightArm.rotation.x = swing;
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
+            } else {
+                HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
             }
+        } else {
+            HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
         }
     }
 
@@ -188,7 +174,6 @@ export class FernanNPC extends BaseNPC {
         this.fallTimer = 2.0;
         sounds.playFernanFall();
 
-        // Lie flat forward on top of the floor
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.position.set(this.position.x, 0.22, this.position.z);
 
@@ -201,7 +186,7 @@ export class FernanNPC extends BaseNPC {
 // 2. Alejandro: Always Laughing!
 export class AlejandroNPC extends BaseNPC {
     constructor(scene, startPos, particles) {
-        super(scene, 'Alejandro 😂', 0x3a3d44, startPos, '/v2_assets/alejandro_v2_face.png'); // Patterned shirt & V2 face
+        super(scene, 'Alejandro 😂', 0x3a3d44, startPos, '/v2_assets/alejandro_v2_face.png');
         this.particles = particles;
         this.laughCooldown = 2.5 + Math.random() * 3.0;
         this.laughingTimer = 0;
@@ -220,6 +205,20 @@ export class AlejandroNPC extends BaseNPC {
             }
         }
 
+        let isRunning = false;
+        if (this.targetPos) {
+            const dir = this.targetPos.clone().sub(this.position);
+            dir.y = 0;
+            const dist = dir.length();
+            if (dist > 0.5) {
+                isRunning = true;
+                dir.normalize();
+                this.position.addScaledVector(dir, this.speed * delta);
+                this.mesh.position.copy(this.position);
+                this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+            }
+        }
+
         if (this.laughingTimer > 0) {
             this.laughingTimer -= delta;
             this.torso.rotation.x = Math.sin(Date.now() * 0.025) * 0.35;
@@ -227,28 +226,7 @@ export class AlejandroNPC extends BaseNPC {
             this.leftArm.rotation.x = Math.sin(Date.now() * 0.025) * 0.5;
             this.rightArm.rotation.x = Math.sin(Date.now() * 0.025) * 0.5;
         } else {
-            this.torso.rotation.x = 0;
-            this.head.rotation.x = 0;
-        }
-
-        if (this.targetPos) {
-            const dir = this.targetPos.clone().sub(this.position);
-            dir.y = 0;
-            const dist = dir.length();
-            if (dist > 0.5) {
-                dir.normalize();
-                this.position.addScaledVector(dir, this.speed * delta);
-                this.mesh.position.copy(this.position);
-                this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
-
-                const swing = Math.sin(Date.now() * 0.01) * 0.5;
-                this.leftLeg.rotation.x = swing;
-                this.rightLeg.rotation.x = -swing;
-                if (this.laughingTimer <= 0) {
-                    this.leftArm.rotation.x = -swing;
-                    this.rightArm.rotation.x = swing;
-                }
-            }
+            HumanoidBuilder.applyPose(this.modelParts, isRunning ? 'run' : 'idle', this.animTime, this.speed);
         }
     }
 }
@@ -273,17 +251,17 @@ export class HectorNPC extends BaseNPC {
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
-                const swing = Math.sin(Date.now() * 0.012) * 0.5;
-                this.leftLeg.rotation.x = swing;
-                this.rightLeg.rotation.x = -swing;
-                this.leftArm.rotation.x = -swing;
-                this.rightArm.rotation.x = swing;
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
+            } else {
+                HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
             }
+        } else {
+            HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
         }
     }
 }
 
-// 4. Sneezer NPC (COVID Hazard - Stalks and pursues our hero Guillo!)
+// 4. Sneezer NPC (COVID Hazard - Pursues Guillo)
 export class SneezerNPC extends BaseNPC {
     constructor(scene, startPos, waypoints, particles) {
         super(scene, 'Sick Worker 🤧', 0x3d352e, startPos, '/v2_assets/sneezer_v2_face.png');
@@ -291,8 +269,8 @@ export class SneezerNPC extends BaseNPC {
         this.currentWpIndex = 0;
         this.particles = particles;
         this.sneezeTimer = 2.0 + Math.random() * 2.0;
-        this.speed = 2.8; // Active pursuit speed
-        this.detectionRange = 25.0; // Notices player across the office
+        this.speed = 2.8;
+        this.detectionRange = 25.0;
     }
 
     update(delta, camera, player) {
@@ -300,7 +278,6 @@ export class SneezerNPC extends BaseNPC {
 
         let target = null;
 
-        // Actively seek and move towards Guillo if nearby
         if (player && !player.isDead) {
             const distToPlayer = this.position.distanceTo(player.position);
             if (distToPlayer < this.detectionRange) {
@@ -317,7 +294,6 @@ export class SneezerNPC extends BaseNPC {
             dir.y = 0;
             const dist = dir.length();
 
-            // Aim sneeze when close to Guillo
             if (player && dist < 4.0) {
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
             }
@@ -328,14 +304,15 @@ export class SneezerNPC extends BaseNPC {
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
-                const swing = Math.sin(Date.now() * 0.012) * 0.45;
-                this.leftLeg.rotation.x = swing;
-                this.rightLeg.rotation.x = -swing;
-                this.leftArm.rotation.x = -swing;
-                this.rightArm.rotation.x = swing;
-            } else if (!player || this.position.distanceTo(player.position) > this.detectionRange) {
-                this.currentWpIndex = (this.currentWpIndex + 1) % this.waypoints.length;
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
+            } else {
+                if (!player || this.position.distanceTo(player.position) > this.detectionRange) {
+                    this.currentWpIndex = (this.currentWpIndex + 1) % this.waypoints.length;
+                }
+                HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
             }
+        } else {
+            HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
         }
 
         // Sneeze attack timer
@@ -349,7 +326,6 @@ export class SneezerNPC extends BaseNPC {
     triggerSneeze(player) {
         sounds.playSneeze();
 
-        // Calculate sneeze emission direction
         const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
         const sneezePos = this.position.clone().add(fwd.clone().multiplyScalar(0.6)).add(new THREE.Vector3(0, 1.45, 0));
 
@@ -357,7 +333,6 @@ export class SneezerNPC extends BaseNPC {
             this.particles.createSneezeCloud(sneezePos, fwd);
         }
 
-        // Viral exposure check on player
         if (player && !player.isDead) {
             const dist = this.position.distanceTo(player.position);
             if (dist < 4.8) {
@@ -377,11 +352,11 @@ export class HostileNPC extends BaseNPC {
         this.currentWpIndex = 0;
         this.speed = 3.4;
         this.shootTimer = 1.6 + Math.random();
-        this.shootCooldown = 2.4; // Shoots every 2.4 seconds
+        this.shootCooldown = 2.4;
         this.arrowSpeed = 16.0;
         this.detectionRange = 26.0;
 
-        // Equip Recurve Bow in right hand
+        // Equip Recurve Bow in right arm
         const bowGroup = new THREE.Group();
         const bowCurveGeo = new THREE.TorusGeometry(0.28, 0.02, 8, 16, Math.PI);
         const bowMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.5 });
@@ -389,7 +364,6 @@ export class HostileNPC extends BaseNPC {
         bowMesh.rotation.z = Math.PI / 2;
         bowGroup.add(bowMesh);
 
-        // Bowstring
         const stringGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.56);
         const stringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const stringMesh = new THREE.Mesh(stringGeo, stringMat);
@@ -423,30 +397,25 @@ export class HostileNPC extends BaseNPC {
         dirToPlayer.y = 0;
         const dist = dirToPlayer.length();
 
-        // 1. Stalk / Pursue Guillo across the office
         if (dist < this.detectionRange) {
             this.mesh.rotation.y = Math.atan2(dirToPlayer.x, dirToPlayer.z);
 
-            // Move closer if not in optimal shooting distance
             if (dist > 4.5) {
                 dirToPlayer.normalize();
                 this.position.addScaledVector(dirToPlayer, this.speed * delta);
                 this.mesh.position.copy(this.position);
 
-                const swing = Math.sin(Date.now() * 0.012) * 0.45;
-                this.leftLeg.rotation.x = swing;
-                this.rightLeg.rotation.x = -swing;
-                this.leftArm.rotation.x = -swing;
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
+            } else {
+                HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
             }
 
-            // 2. Aim and Shoot Arrow at Guillo
             this.shootTimer -= delta;
             if (this.shootTimer <= 0 && dist < 18.0) {
                 this.shootTimer = this.shootCooldown;
                 this.fireArrowAtPlayer(player, level);
             }
         } else if (this.waypoints && this.waypoints.length > 0) {
-            // Patrol waypoints if player is far
             const wp = this.waypoints[this.currentWpIndex];
             const wpDir = wp.clone().sub(this.position);
             wpDir.y = 0;
@@ -457,6 +426,7 @@ export class HostileNPC extends BaseNPC {
                 this.position.addScaledVector(wpDir, this.speed * delta);
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(wpDir.x, wpDir.z);
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
             }
         }
     }

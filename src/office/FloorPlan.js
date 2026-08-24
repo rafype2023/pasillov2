@@ -2,144 +2,362 @@ import * as THREE from 'three';
 import { officeMaterials } from './Materials.js';
 import { officeProps } from './Props.js';
 
+/**
+ * FloorPlan: Photorealistic 3D Office Environment ("THE SPINE")
+ * Faithfully matches the Unreal Engine reference image:
+ * - Central Spine cubicle rows with modular beige fabric partitions and top aluminum trim
+ * - Ergonomic curved maple desks with dual monitors, potted plants, photo frames, phones, and mesh chairs
+ * - Integrated whiteboard milestone notes on partition walls
+ * - Floor-to-ceiling glass executive boardroom with multi-monitor server monitoring video wall
+ * - Suspended acoustic drop ceiling with warm-neutral fluorescent troffers
+ * - Recessed red carpeted stairwell with silver handrails and office clock
+ */
 export class FloorPlan {
     constructor(scene) {
         this.scene = scene;
         this.materials = officeMaterials;
         this.props = officeProps;
-        this.colliders = []; // List of bounding boxes for physics collision
-        this.exits = [];     // List of exit locations (stairwells)
-        this.spawnPoint = new THREE.Vector3(0, 0, 0); // Central Lobby corridor
-        this.loungePoint = new THREE.Vector3(26, 0, -8); // Breakroom Lounge
+        this.colliders = [];
+        this.exits = [{ pos: new THREE.Vector3(0, 0, -17.2), name: 'Escaleras de Emergencia' }];
+        this.spawnPoint = new THREE.Vector3(0, 0, 8); // Start at the front of the Spine
+        this.loungePoint = new THREE.Vector3(16, 0, -2); // Boardroom / Lounge
         this.cubicleDesks = [];
         this.lights = [];
-        this.interactiveObjects = [];
 
         this.buildOffice();
+    }
+
+    setEmergencyLighting(enabled) {
+        const mat = this.materials.get('fluorescentLight');
+        if (mat) {
+            mat.emissive.setHex(enabled ? 0xff2222 : 0xfffaed);
+            mat.emissiveIntensity = enabled ? 2.0 : 1.25;
+        }
     }
 
     buildOffice() {
         this.group = new THREE.Group();
 
-        // 1. Floor (Wide aspect ratio matching Plano2.png: 78m x 28m)
+        // 1. Commercial Loop-Pile Carpet Floor & Suspended Acoustic Drop Ceiling
         this.createFloorAndCeiling();
 
-        // 2. Outer Perimeter Walls
+        // 2. Perimeter Structural Walls & Panoramic Glass Mullions
         this.createPerimeterWalls();
 
-        // 3. Central Core: 3 Elevators, Restrooms & Main Corridors
-        this.createCentralCore();
+        // 3. THE CENTRAL SPINE (Primary Cubicle Bank matching reference image)
+        this.createCentralSpine();
 
-        // 4. West Wing (Left): Boardroom, Executive Pods, Lounge Booths & 4 Cubicle Rows
+        // 4. West Wing (Left): Additional Cubicle Banks & Manager Pods
         this.createWestWing();
 
-        // 5. East Wing (Right): Conference Suites, 3 Long Cubicle Banks & Green Breakout Lounges
-        this.createEastWing();
+        // 5. East Wing (Right): Glass Command Center / Boardroom with Server Video Wall
+        this.createEastCommandCenter();
 
-        // 6. Emergency Stairwell Exits (Matching Plano2.png)
-        this.createStairwellExits();
+        // 6. Background Alcove: Red Carpeted Staircase & Office Clock
+        this.createBackgroundStaircase();
 
-        // 7. Ceiling Lighting Grid & Office Details
+        // 7. Ceiling Light Troffers (Overhead Corporate Illumination)
         this.createCeilingLights();
 
         this.scene.add(this.group);
     }
 
     createFloorAndCeiling() {
-        // Floor Mesh: 78m wide x 28m deep (matching Plano2.png)
-        const floorGeo = new THREE.PlaneGeometry(80, 30);
+        // Floor: 56m wide x 38m deep
+        const floorGeo = new THREE.PlaneGeometry(56, 38);
         const floorMesh = new THREE.Mesh(floorGeo, this.materials.get('carpet'));
         floorMesh.rotation.x = -Math.PI / 2;
         floorMesh.receiveShadow = true;
         this.group.add(floorMesh);
 
-        // Open top beams for structural realism without obstructing camera view
-        const beamMat = this.materials.get('cubicleTrim');
-        for (let x = -36; x <= 36; x += 12) {
-            const beam = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.35, 29), beamMat);
-            beam.position.set(x, 3.4, 0);
-            this.group.add(beam);
-        }
+        // Suspended Drop Ceiling Tile Grid at height y = 3.6m
+        const ceilGeo = new THREE.PlaneGeometry(56, 38);
+        const ceilMesh = new THREE.Mesh(ceilGeo, this.materials.get('ceiling'));
+        ceilMesh.rotation.x = Math.PI / 2;
+        ceilMesh.position.y = 3.6;
+        this.group.add(ceilMesh);
     }
 
     createPerimeterWalls() {
         const wallMat = this.materials.get('wall');
         const glassMat = this.materials.get('glass');
         const trimMat = this.materials.get('cubicleTrim');
-        const height = 3.2;
+        const height = 3.6;
 
-        // North Perimeter: Alternating Lower Wall + Upper Panoramic Glass
-        this.addWall(0, 0.45, -14, 78, 0.9, 0.3, wallMat);
-        this.addWall(0, 2.05, -14, 78, 2.3, 0.15, glassMat);
+        // North Wall (Back)
+        this.addWall(-10, height / 2, -18, 36, height, 0.3, wallMat);
+        this.addWall(16, height / 2, -18, 16, height, 0.3, wallMat);
 
-        // South Perimeter: Lower Wall + Panoramic Glass
-        this.addWall(0, 0.45, 14, 78, 0.9, 0.3, wallMat);
-        this.addWall(0, 2.05, 14, 78, 2.3, 0.15, glassMat);
+        // South Wall (Front)
+        this.addWall(0, 0.45, 18, 54, 0.9, 0.3, wallMat);
+        this.addWall(0, 2.25, 18, 54, 2.7, 0.15, glassMat);
 
-        // West Perimeter: Solid Wall + Emergency Exit Framing
-        this.addWall(-39, height / 2, 0, 0.3, height, 28, wallMat);
+        // West Wall (Left)
+        this.addWall(-27, height / 2, 0, 0.3, height, 36, wallMat);
 
-        // East Perimeter: Solid Wall + Corner Glass
-        this.addWall(39, height / 2, 0, 0.3, height, 28, wallMat);
+        // East Wall (Right)
+        this.addWall(27, height / 2, 0, 0.3, height, 36, wallMat);
 
         // Window mullions (vertical aluminum pillars)
-        for (let x = -36; x <= 36; x += 6) {
-            const colN = new THREE.Mesh(new THREE.BoxGeometry(0.2, height, 0.35), trimMat);
-            colN.position.set(x, height / 2, -14);
-            this.group.add(colN);
+        for (let x = -24; x <= 24; x += 6) {
+            const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.18, height, 0.3), trimMat);
+            mullion.position.set(x, height / 2, 18);
+            this.group.add(mullion);
+        }
+    }
 
-            const colS = new THREE.Mesh(new THREE.BoxGeometry(0.2, height, 0.35), trimMat);
-            colS.position.set(x, height / 2, 14);
-            this.group.add(colS);
+    /**
+     * Builds the signature "Central Spine" cubicle cluster (centered along Z axis)
+     * Matches the exact layout, beige acoustic fabric, aluminum cap channels,
+     * curved maple desks, whiteboards, and accessories from the reference image!
+     */
+    createCentralSpine() {
+        const spineGroup = new THREE.Group();
+        const fabricMat = this.materials.get('cubicleFabric');
+        const trimMat = this.materials.get('cubicleTrim');
+        const spineCapMat = this.materials.get('spineCap');
+
+        const partitionH = 1.30;
+        const spineH = 1.40;
+        const podLength = 3.4; // Length per cubicle pair along Z
+        const podCount = 4;    // 4 dual rows down the spine
+
+        // 1. Central Structural Cable Spine Channel (runs through middle along Z)
+        const spineLength = podCount * podLength + 0.6;
+        const spineZCenter = 0;
+
+        // Central Double-Sided Divider Partition
+        const spineWallGeo = new THREE.BoxGeometry(0.12, partitionH, spineLength);
+        const spineWall = new THREE.Mesh(spineWallGeo, fabricMat);
+        spineWall.position.set(0, partitionH / 2, spineZCenter);
+        spineWall.castShadow = true;
+        spineGroup.add(spineWall);
+
+        // Elevated Top Spine Channel Box / Shelf Cap
+        const capGeo = new THREE.BoxGeometry(0.32, 0.14, spineLength);
+        const cap = new THREE.Mesh(capGeo, spineCapMat);
+        cap.position.set(0, partitionH + 0.07, spineZCenter);
+        cap.castShadow = true;
+        spineGroup.add(cap);
+
+        // Top Aluminum Trim Line
+        const trimGeo = new THREE.BoxGeometry(0.34, 0.025, spineLength);
+        const trim = new THREE.Mesh(trimGeo, trimMat);
+        trim.position.set(0, partitionH + 0.145, spineZCenter);
+        spineGroup.add(trim);
+
+        // Register central spine collider
+        const spineBox = new THREE.Box3();
+        spineBox.setFromCenterAndSize(new THREE.Vector3(0, partitionH / 2, spineZCenter), new THREE.Vector3(0.4, partitionH, spineLength));
+        this.colliders.push(spineBox);
+
+        // 2. Transverse Dividers & Cubicle Pods (Left & Right of Spine)
+        for (let i = 0; i < podCount; i++) {
+            const z = (i - (podCount - 1) / 2) * podLength;
+
+            // Transverse Divider Wall (Separating cubicles along Z)
+            const divW = 2.7;
+            const divGeo = new THREE.BoxGeometry(divW, partitionH, 0.10);
+
+            // Left transverse partition
+            const divLeft = new THREE.Mesh(divGeo, fabricMat);
+            divLeft.position.set(-divW / 2 - 0.06, partitionH / 2, z - podLength / 2);
+            divLeft.castShadow = true;
+            spineGroup.add(divLeft);
+
+            const divLeftTrim = new THREE.Mesh(new THREE.BoxGeometry(divW, 0.035, 0.12), trimMat);
+            divLeftTrim.position.set(-divW / 2 - 0.06, partitionH + 0.018, z - podLength / 2);
+            spineGroup.add(divLeftTrim);
+
+            // Right transverse partition
+            const divRight = new THREE.Mesh(divGeo, fabricMat);
+            divRight.position.set(divW / 2 + 0.06, partitionH / 2, z - podLength / 2);
+            divRight.castShadow = true;
+            spineGroup.add(divRight);
+
+            const divRightTrim = new THREE.Mesh(new THREE.BoxGeometry(divW, 0.035, 0.12), trimMat);
+            divRightTrim.position.set(divW / 2 + 0.06, partitionH + 0.018, z - podLength / 2);
+            spineGroup.add(divRightTrim);
+
+            // Colliders for transverse walls
+            const colL = new THREE.Box3();
+            colL.setFromCenterAndSize(new THREE.Vector3(-divW / 2 - 0.06, partitionH / 2, z - podLength / 2), new THREE.Vector3(divW, partitionH, 0.2));
+            this.colliders.push(colL);
+
+            const colR = new THREE.Box3();
+            colR.setFromCenterAndSize(new THREE.Vector3(divW / 2 + 0.06, partitionH / 2, z - podLength / 2), new THREE.Vector3(divW, partitionH, 0.2));
+            this.colliders.push(colR);
+
+            // Integrated Whiteboard mounted on partition wall (e.g. at pods 1 & 2)
+            if (i === 1 || i === 2) {
+                const wb = this.props.createWhiteboard(1.3, 0.85);
+                wb.position.set(divW / 2 + 0.06, partitionH * 0.58, z - podLength / 2 + 0.06);
+                spineGroup.add(wb);
+            }
+
+            // 3. Left Cubicle Pod Equipment & Desk
+            const podL = this.props.createSpineCubiclePod('left');
+            podL.position.set(-1.45, 0, z);
+            spineGroup.add(podL);
+
+            // 4. Right Cubicle Pod Equipment & Desk
+            const podR = this.props.createSpineCubiclePod('right');
+            podR.position.set(1.45, 0, z);
+            spineGroup.add(podR);
+
+            // Register desk collider boxes
+            const deskBoxL = new THREE.Box3();
+            deskBoxL.setFromCenterAndSize(new THREE.Vector3(-1.45, 0.4, z), new THREE.Vector3(2.2, 0.8, 1.4));
+            this.colliders.push(deskBoxL);
+
+            const deskBoxR = new THREE.Box3();
+            deskBoxR.setFromCenterAndSize(new THREE.Vector3(1.45, 0.4, z), new THREE.Vector3(2.2, 0.8, 1.4));
+            this.colliders.push(deskBoxR);
         }
 
-        // 3D Exterior City Skyline (San Juan / Hato Rey Financial District Panorama)
-        this.createCitySkylineBackdrop();
+        // End Caps for Spine
+        const endZ = podCount * podLength / 2;
+        const endWallL = new THREE.Mesh(new THREE.BoxGeometry(2.7, partitionH, 0.10), fabricMat);
+        endWallL.position.set(-1.41, partitionH / 2, endZ);
+        spineGroup.add(endWallL);
+
+        const endWallR = new THREE.Mesh(new THREE.BoxGeometry(2.7, partitionH, 0.10), fabricMat);
+        endWallR.position.set(1.41, partitionH / 2, endZ);
+        spineGroup.add(endWallR);
+
+        this.group.add(spineGroup);
     }
 
-    createCitySkylineBackdrop() {
-        const skyGroup = new THREE.Group();
-        const buildingMat1 = new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.3, metalness: 0.7 });
-        const buildingMat2 = new THREE.MeshStandardMaterial({ color: 0x2c3545, roughness: 0.4, metalness: 0.5 });
-        const buildingMat3 = new THREE.MeshStandardMaterial({ color: 0x151c28, roughness: 0.2, metalness: 0.8 });
-        const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffe6aa, transparent: true, opacity: 0.75 });
+    /**
+     * Builds West Wing (Left side cubicle clusters & open manager stations)
+     */
+    createWestWing() {
+        const westGroup = new THREE.Group();
+        const fabricMat = this.materials.get('cubicleFabric');
+        const trimMat = this.materials.get('cubicleTrim');
 
-        const mats = [buildingMat1, buildingMat2, buildingMat3];
+        // Parallel cubicle cluster at X: -10
+        for (let i = 0; i < 3; i++) {
+            const z = (i - 1) * 3.4;
+            const podL = this.props.createSpineCubiclePod('left');
+            podL.position.set(-10, 0, z);
+            westGroup.add(podL);
 
-        // North Skyscraper Skyline (Beyond Z: -22)
-        const northTowers = [
-            { x: -35, z: -28, w: 14, d: 14, h: 42 },
-            { x: -18, z: -32, w: 18, d: 16, h: 58 },
-            { x: 0, z: -26, w: 16, d: 14, h: 36 },
-            { x: 18, z: -30, w: 15, d: 15, h: 48 },
-            { x: 35, z: -27, w: 16, d: 14, h: 38 }
-        ];
+            const dBox = new THREE.Box3();
+            dBox.setFromCenterAndSize(new THREE.Vector3(-10, 0.4, z), new THREE.Vector3(2.4, 0.8, 1.5));
+            this.colliders.push(dBox);
+        }
 
-        // South Skyscraper Skyline (Beyond Z: +22)
-        const southTowers = [
-            { x: -32, z: 28, w: 15, d: 15, h: 46 },
-            { x: -14, z: 32, w: 18, d: 16, h: 54 },
-            { x: 5, z: 27, w: 16, d: 14, h: 40 },
-            { x: 22, z: 30, w: 16, d: 15, h: 50 },
-            { x: 38, z: 28, w: 14, d: 14, h: 36 }
-        ];
+        // Corner Meeting Pod at X: -18, Z: 6
+        const roundTable = this.props.createRoundMeetingTable(1.1, 4);
+        roundTable.position.set(-18, 0, 6);
+        westGroup.add(roundTable);
 
-        [...northTowers, ...southTowers].forEach((t, idx) => {
-            const mat = mats[idx % mats.length];
-            const tower = new THREE.Mesh(new THREE.BoxGeometry(t.w, t.h, t.d), mat);
-            tower.position.set(t.x, t.h / 2 - 8, t.z);
-            skyGroup.add(tower);
+        this.group.add(westGroup);
+    }
 
-            // Roof antenna
-            const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 8, 8), mat);
-            antenna.position.set(t.x, t.h - 4, t.z);
-            skyGroup.add(antenna);
+    /**
+     * Builds the Executive Glass Boardroom & Server Telemetry Command Center on the right (matching reference image)
+     */
+    createEastCommandCenter() {
+        const cmdGroup = new THREE.Group();
+        const glassMat = this.materials.get('glass');
+        const wallMat = this.materials.get('wall');
+        const trimMat = this.materials.get('cubicleTrim');
+        const height = 3.2;
+
+        const xCenter = 16;
+        const zCenter = 0;
+        const width = 10;
+        const depth = 12;
+
+        // 1. Glass Wall Front facing the Central Aisle (X: 11)
+        const glassWallGeo = new THREE.BoxGeometry(0.08, height, depth - 2.0);
+        const glassWall = new THREE.Mesh(glassWallGeo, glassMat);
+        glassWall.position.set(11, height / 2, zCenter - 1.0);
+        cmdGroup.add(glassWall);
+
+        // Aluminum mullions along the glass wall
+        for (let z = -depth / 2 + 1; z <= depth / 2 - 1; z += 2.0) {
+            const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.14, height, 0.12), trimMat);
+            mullion.position.set(11, height / 2, z);
+            cmdGroup.add(mullion);
+        }
+
+        // Glass Door Opening (Z: +5)
+        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, height, 1.4), trimMat);
+        doorFrame.position.set(11, height / 2, 5.2);
+        cmdGroup.add(doorFrame);
+
+        // Glass Door (Ajar at 45 degrees)
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.4, 1.1), glassMat);
+        door.rotation.y = 0.55;
+        door.position.set(11.2, 1.2, 5.2);
+        cmdGroup.add(door);
+
+        // Solid Boundary Walls
+        this.addWall(xCenter + width / 2, height / 2, zCenter, 0.3, height, depth, wallMat);
+        this.addWall(xCenter, height / 2, -depth / 2, width, height, 0.3, wallMat);
+        this.addWall(xCenter, height / 2, depth / 2, width, height, 0.3, wallMat);
+
+        // Register collider for glass perimeter
+        const glassBox = new THREE.Box3();
+        glassBox.setFromCenterAndSize(new THREE.Vector3(11, height / 2, zCenter - 1.0), new THREE.Vector3(0.3, height, depth - 2.0));
+        this.colliders.push(glassBox);
+
+        // 2. Command Center Furniture & 6-Screen Server Video Wall
+        const interior = this.props.createCommandCenter(width, depth, height);
+        interior.position.set(xCenter, 0, zCenter);
+        cmdGroup.add(interior);
+
+        this.group.add(cmdGroup);
+    }
+
+    /**
+     * Builds the Red Carpeted Stairway Alcove & Clock in the central background (matching reference image)
+     */
+    createBackgroundStaircase() {
+        const stairs = this.props.createBackgroundStaircase();
+        stairs.position.set(0, 0, -17.2);
+        this.group.add(stairs);
+
+        // Stairwell doorway collider
+        const stairCol = new THREE.Box3();
+        stairCol.setFromCenterAndSize(new THREE.Vector3(0, 1.0, -18.5), new THREE.Vector3(3.0, 2.0, 1.0));
+        this.colliders.push(stairCol);
+    }
+
+    /**
+     * Suspended Fluorescent Light Troffers across the Ceiling
+     * Casts clean corporate illumination and contact shadows
+     */
+    createCeilingLights() {
+        const lightGeo = new THREE.BoxGeometry(1.6, 0.04, 0.8);
+        const lightMat = this.materials.get('fluorescentLight');
+        const trimMat = this.materials.get('cubicleTrim');
+
+        // Light Troffers in 4 longitudinal columns matching office rows
+        const xCols = [-14, -4, 4, 16];
+        const zRows = [-14, -8, -2, 4, 10, 15];
+
+        xCols.forEach(x => {
+            zRows.forEach(z => {
+                const group = new THREE.Group();
+                const fixture = new THREE.Mesh(lightGeo, lightMat);
+                fixture.position.set(0, 3.58, 0);
+                group.add(fixture);
+
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.02, 0.86), trimMat);
+                frame.position.set(0, 3.595, 0);
+                group.add(frame);
+
+                group.position.set(x, 0, z);
+                this.group.add(group);
+            });
         });
-
-        this.group.add(skyGroup);
     }
 
-    addWall(x, y, z, w, h, d, material, isCubicle = false) {
+    addWall(x, y, z, w, h, d, material) {
         const geo = new THREE.BoxGeometry(w, h, d);
         const mesh = new THREE.Mesh(geo, material);
         mesh.position.set(x, y, z);
@@ -147,278 +365,8 @@ export class FloorPlan {
         mesh.receiveShadow = true;
         this.group.add(mesh);
 
-        // Register collider box for collision detection
-        const box = new THREE.Box3().setFromCenterAndSize(
-            new THREE.Vector3(x, isCubicle ? 0.8 : y, z),
-            new THREE.Vector3(w, isCubicle ? 1.6 : h, d)
-        );
-        this.colliders.push(box);
-        return mesh;
-    }
-
-    createCentralCore() {
-        const wallMat = this.materials.get('wall');
-        const glassMat = this.materials.get('glass');
-        const height = 3.2;
-
-        // Elevator Bank (3 Elevators at X: 4.5, Z: [-3.2, 0, 3.2])
-        const elevators = this.props.createElevatorBank();
-        elevators.position.set(4.5, 0, 0);
-        this.group.add(elevators);
-
-        // Elevator shaft back and side walls
-        this.addWall(4.5, height / 2, 0, 0.3, height, 9.6, wallMat);
-        this.addWall(6.0, height / 2, -4.8, 3.0, height, 0.3, wallMat);
-        this.addWall(6.0, height / 2, 4.8, 3.0, height, 0.3, wallMat);
-        this.addWall(7.5, height / 2, 0, 0.3, height, 9.6, wallMat);
-
-        // Restroom Core (West of elevator lobby: X: -2, Z: -5.5)
-        this.addWall(-2.0, height / 2, -5.5, 0.3, height, 15.0, wallMat);
-        this.addWall(-4.5, height / 2, 2.0, 5.0, height, 0.3, wallMat);
-
-        // Water cooler / Sanitizer in central lobby
-        const sanitizer = this.props.createHandSanitizer();
-        sanitizer.position.set(0, 0, 0);
-        this.group.add(sanitizer);
-        this.interactiveObjects.push({ type: 'sanitizer', mesh: sanitizer, pos: new THREE.Vector3(0, 0, 0) });
-    }
-
-    createWestWing() {
-        const wallMat = this.materials.get('wall');
-        const glassMat = this.materials.get('glass');
-        const cubicleMat = this.materials.get('cubicleFabric');
-        const height = 3.2;
-        const partitionH = 1.55;
-
-        // 1. Boardroom Conference Room (Top-West: X: [-36, -26], Z: [-13, -5])
-        this.addWall(-31, height / 2, -5.0, 10.0, height, 0.25, wallMat);
-        this.addWall(-26, height / 2, -9.0, 0.25, height, 8.0, wallMat);
-        // Glass doorway transom
-        this.addWall(-26, height / 2, -5.0, 0.2, height, 2.0, glassMat);
-
-        // Large Conference Table inside Boardroom
-        const confTableW = this.props.createConferenceTable(5.2, 1.8, 10);
-        confTableW.position.set(-31, 0, -9.0);
-        this.group.add(confTableW);
-
-        // Whiteboard on Boardroom Wall
-        const wb1 = this.props.createWhiteboard(3.0, 1.4);
-        wb1.position.set(-31, 1.8, -13.8);
-        this.group.add(wb1);
-
-        // 2. South-West Conference Room (X: [-36, -26], Z: [5, 13])
-        this.addWall(-31, height / 2, 5.0, 10.0, height, 0.25, wallMat);
-        this.addWall(-26, height / 2, 9.0, 0.25, height, 8.0, wallMat);
-
-        const confTableSW = this.props.createConferenceTable(4.2, 1.6, 8);
-        confTableSW.position.set(-31, 0, 9.0);
-        this.group.add(confTableSW);
-
-        // 3. West Executive Discussion Pods (Far West center: X: -33, Z: 0)
-        const roundTableW = this.props.createRoundMeetingTable(1.1, 4);
-        roundTableW.position.set(-33, 0, 0);
-        this.group.add(roundTableW);
-
-        // 4. Executive Suite & U-shaped Lounge Booths (Top Center-West: X: [-24, -14], Z: [-13, -7])
-        this.addWall(-19, height / 2, -7.0, 10.0, height, 0.25, wallMat);
-        const loungeTable = this.props.createConferenceTable(3.6, 1.4, 6);
-        loungeTable.position.set(-19, 0, -10.5);
-        this.group.add(loungeTable);
-
-        // 5. 4 Double-Sided Cubicle Workstation Rows in West Wing (X: -24, -19, -14, -9)
-        const westRowX = [-24, -19, -14, -9];
-        const westZSlots = [-2, 1, 4, 7, 10];
-
-        westRowX.forEach(x => {
-            // Center partition dividing double rows
-            this.addWall(x, partitionH / 2, 4.0, 0.12, partitionH, 13.0, cubicleMat, true);
-
-            westZSlots.forEach(z => {
-                // Left Desk (Facing East)
-                const deskL = this.props.createCubicleDesk(1.8, 1.2, 0.75);
-                deskL.position.set(x - 0.95, 0, z);
-                deskL.rotation.y = Math.PI / 2;
-                this.group.add(deskL);
-                this.cubicleDesks.push({ pos: new THREE.Vector3(x - 0.95, 0, z) });
-
-                // Right Desk (Facing West)
-                const deskR = this.props.createCubicleDesk(1.8, 1.2, 0.75);
-                deskR.position.set(x + 0.95, 0, z);
-                deskR.rotation.y = -Math.PI / 2;
-                this.group.add(deskR);
-                this.cubicleDesks.push({ pos: new THREE.Vector3(x + 0.95, 0, z) });
-
-                // Cross partition
-                this.addWall(x - 0.95, partitionH / 2, z + 0.9, 1.9, partitionH, 0.1, cubicleMat, true);
-                this.addWall(x + 0.95, partitionH / 2, z + 0.9, 1.9, partitionH, 0.1, cubicleMat, true);
-
-                // Add filing cabinet
-                const cabinet = this.props.createFilingCabinet();
-                cabinet.position.set(x - 1.5, 0, z - 0.4);
-                this.group.add(cabinet);
-            });
-        });
-    }
-
-    createEastWing() {
-        const wallMat = this.materials.get('wall');
-        const glassMat = this.materials.get('glass');
-        const cubicleMat = this.materials.get('cubicleFabric');
-        const height = 3.2;
-        const partitionH = 1.55;
-
-        // 1. North-East Conference Suite (X: [9, 17], Z: [-13, -5])
-        this.addWall(13, height / 2, -5.0, 8.0, height, 0.25, wallMat);
-        this.addWall(17, height / 2, -9.0, 0.25, height, 8.0, wallMat);
-        // Glass wall
-        this.addWall(9, height / 2, -9.0, 0.25, height, 8.0, glassMat);
-
-        const confTableNE = this.props.createConferenceTable(4.8, 1.8, 8);
-        confTableNE.position.set(13, 0, -9.0);
-        this.group.add(confTableNE);
-
-        // 2. Central-East Oval Conference Room (X: [9, 17], Z: [-2, 6])
-        this.addWall(13, height / 2, -2.0, 8.0, height, 0.25, wallMat);
-        this.addWall(13, height / 2, 6.0, 8.0, height, 0.25, wallMat);
-        this.addWall(17, height / 2, 2.0, 0.25, height, 8.0, glassMat);
-
-        const confTableCE = this.props.createConferenceTable(4.2, 1.6, 8);
-        confTableCE.position.set(13, 0, 2.0);
-        this.group.add(confTableCE);
-
-        // 3. 3 Long Double-Sided Cubicle Workstation Rows (X: 21, 26, 31)
-        const eastRowX = [21, 26, 31];
-        const eastZSlots = [-10, -7, -4, -1, 2, 5, 8, 11];
-
-        eastRowX.forEach(x => {
-            // Main spine partition
-            this.addWall(x, partitionH / 2, 0.5, 0.12, partitionH, 23.0, cubicleMat, true);
-
-            eastZSlots.forEach(z => {
-                // West-facing desk
-                const deskW = this.props.createCubicleDesk(1.8, 1.2, 0.75);
-                deskW.position.set(x - 0.95, 0, z);
-                deskW.rotation.y = Math.PI / 2;
-                this.group.add(deskW);
-                this.cubicleDesks.push({ pos: new THREE.Vector3(x - 0.95, 0, z) });
-
-                // East-facing desk
-                const deskE = this.props.createCubicleDesk(1.8, 1.2, 0.75);
-                deskE.position.set(x + 0.95, 0, z);
-                deskE.rotation.y = -Math.PI / 2;
-                this.group.add(deskE);
-                this.cubicleDesks.push({ pos: new THREE.Vector3(x + 0.95, 0, z) });
-
-                // Cross divider
-                this.addWall(x - 0.95, partitionH / 2, z + 0.9, 1.9, partitionH, 0.1, cubicleMat, true);
-                this.addWall(x + 0.95, partitionH / 2, z + 0.9, 1.9, partitionH, 0.1, cubicleMat, true);
-            });
-        });
-
-        // 4. Breakout Lounges with Olive Green Armchairs (cub4.png, cub5.png)
-        // Lounge Area 1 (X: 35.5, Z: -8)
-        const chair1 = this.props.createGreenArmchair();
-        chair1.position.set(35.5, 0, -9.0);
-        chair1.rotation.y = -Math.PI / 4;
-        this.group.add(chair1);
-
-        const chair2 = this.props.createGreenArmchair();
-        chair2.position.set(35.5, 0, -7.0);
-        chair2.rotation.y = -Math.PI * 0.75;
-        this.group.add(chair2);
-
-        // Lounge Area 2 (X: 35.5, Z: 8)
-        const chair3 = this.props.createGreenArmchair();
-        chair3.position.set(35.5, 0, 7.0);
-        chair3.rotation.y = -Math.PI / 4;
-        this.group.add(chair3);
-
-        const chair4 = this.props.createGreenArmchair();
-        chair4.position.set(35.5, 0, 9.0);
-        chair4.rotation.y = -Math.PI * 0.75;
-        this.group.add(chair4);
-
-        // Breakroom Snack Table (Level 2 destination)
-        const snackTable = this.props.createSnacksTable();
-        snackTable.position.set(this.loungePoint.x, 0, this.loungePoint.z);
-        this.group.add(snackTable);
-    }
-
-    createStairwellExits() {
-        // 1. West Main Stairwell Escape (Red highlighted stairwell in Plano2.png: X: -3.5, Z: 8.5)
-        const exitWest = this.props.createStairwellExit(1.4, 2.4);
-        exitWest.position.set(-3.5, 0, 8.5);
-        exitWest.rotation.y = Math.PI;
-        this.group.add(exitWest);
-        this.exits.push({ pos: new THREE.Vector3(-3.5, 0, 8.5), name: 'Escalera Oeste (Principal)' });
-
-        // 2. Far West Fire Exit (X: -38, Z: 0)
-        const exitFarWest = this.props.createStairwellExit(1.4, 2.4);
-        exitFarWest.position.set(-38.0, 0, 0);
-        exitFarWest.rotation.y = Math.PI / 2;
-        this.group.add(exitFarWest);
-        this.exits.push({ pos: new THREE.Vector3(-38.0, 0, 0), name: 'Salida de Emergencia Oeste' });
-
-        // 3. Far East Fire Exit (X: 38, Z: 0)
-        const exitEast = this.props.createStairwellExit(1.4, 2.4);
-        exitEast.position.set(38.0, 0, 0);
-        exitEast.rotation.y = -Math.PI / 2;
-        this.group.add(exitEast);
-        this.exits.push({ pos: new THREE.Vector3(38.0, 0, 0), name: 'Salida de Emergencia Este' });
-
-        // 4. North Exit (X: 0, Z: -13.5)
-        const exitNorth = this.props.createStairwellExit(1.4, 2.4);
-        exitNorth.position.set(0, 0, -13.5);
-        exitNorth.rotation.y = 0;
-        this.group.add(exitNorth);
-        this.exits.push({ pos: new THREE.Vector3(0, 0, -13.5), name: 'Salida Norte' });
-    }
-
-    createCeilingLights() {
-        // Grid of fluorescent lights across the 78m x 28m office floor
-        const lightGeo = new THREE.BoxGeometry(1.6, 0.08, 0.45);
-        const lightMat = this.materials.get('fluorescentLight');
-
-        for (let x = -34; x <= 34; x += 8) {
-            for (let z = -10; z <= 10; z += 5) {
-                const lightMesh = new THREE.Mesh(lightGeo, lightMat);
-                lightMesh.position.set(x, 3.35, z);
-                this.group.add(lightMesh);
-
-                // Soft point light every alternating grid
-                if ((x + z) % 10 === 0) {
-                    const pl = new THREE.PointLight(0xfffaed, 0.35, 14);
-                    pl.position.set(x, 3.0, z);
-                    this.group.add(pl);
-                    this.lights.push(pl);
-                }
-            }
-        }
-    }
-
-    setEmergencyLighting(isAlert) {
-        this.lights.forEach(light => {
-            if (isAlert) {
-                light.color.setHex(0xff1111);
-                light.intensity = 0.7;
-            } else {
-                light.color.setHex(0xfffaed);
-                light.intensity = 0.35;
-            }
-        });
-    }
-
-    getRandomSafeSpot() {
-        const spots = [
-            new THREE.Vector3(-31, 0, -9.0),  // Boardroom
-            new THREE.Vector3(-31, 0, 9.0),   // SW Conference
-            new THREE.Vector3(-19, 0, -10.5), // Top Lounge
-            new THREE.Vector3(13, 0, -9.0),   // NE Conference
-            new THREE.Vector3(13, 0, 2.0),    // Central-East Conference
-            new THREE.Vector3(35, 0, -8.0),   // East Green Lounge
-            new THREE.Vector3(35, 0, 8.0),    // East Breakout Lounge
-            new THREE.Vector3(0, 0, 6.0)      // Central Lobby
-        ];
-        return spots[Math.floor(Math.random() * spots.length)].clone();
+        const col = new THREE.Box3();
+        col.setFromCenterAndSize(new THREE.Vector3(x, y, z), new THREE.Vector3(w, h, d));
+        this.colliders.push(col);
     }
 }

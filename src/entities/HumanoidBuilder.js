@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 
 /**
- * Next-Gen Humanoid & Cyber Android Model Builder
- * Faithfully matches the AAA game Unreal Engine reference models:
- * 1. Business Casual Human: Light blue dress shirt, dark slacks, dress shoes, styled hair.
+ * Next-Gen High-Fidelity Humanoid & Cyber Android Model Builder
+ * Faithfully matches the Unreal Engine reference models & poses:
+ * 1. Business Casual Human: Light blue button-up dress shirt, dark charcoal slacks, dress shoes, wavy styled grey/blonde hair.
  * 2. Cyber Android Cyborg: Polished titanium armor, sleek aerodynamic helmet, glowing cyan Arc Reactor.
+ * 
+ * Supports full 3D animation poses:
+ * - RUN: High-knee athletic sprint with 90° arm drives
+ * - JUMP: Airborne leap with tucked knees and balanced wide arms
+ * - IDLE: Confident standing A-pose with subtle breathing cycle
+ * - CROUCH: Low-profile stealth stance
  */
 export class HumanoidBuilder {
     /**
@@ -16,14 +22,14 @@ export class HumanoidBuilder {
             pantsColor = 0x1e232a,    // Charcoal dark dress slacks
             shoesColor = 0x111317,    // Polished black dress shoes
             skinColor = 0xe8be9e,     // Realistic skin tone
-            hairColor = 0xb0a89e,     // Styled grey/blonde hair (as in reference image)
+            hairColor = 0xb5ada5,     // Styled grey/blonde hair (as in reference image)
             faceTexturePath = null,
             hasBadge = true
         } = options;
 
         const group = new THREE.Group();
 
-        // Materials
+        // High-end PBR Materials
         const skinMat = new THREE.MeshStandardMaterial({
             color: skinColor,
             roughness: 0.55,
@@ -32,13 +38,13 @@ export class HumanoidBuilder {
 
         const shirtMat = new THREE.MeshStandardMaterial({
             color: shirtColor,
-            roughness: 0.75,
-            metalness: 0.05
+            roughness: 0.72,
+            metalness: 0.04
         });
 
         const collarMat = new THREE.MeshStandardMaterial({
             color: new THREE.Color(shirtColor).multiplyScalar(1.08),
-            roughness: 0.7
+            roughness: 0.68
         });
 
         const pantsMat = new THREE.MeshStandardMaterial({
@@ -48,7 +54,7 @@ export class HumanoidBuilder {
         });
 
         const beltMat = new THREE.MeshStandardMaterial({
-            color: 0x221a15,
+            color: 0x241c18,
             roughness: 0.4
         });
 
@@ -61,12 +67,12 @@ export class HumanoidBuilder {
         const shoesMat = new THREE.MeshStandardMaterial({
             color: shoesColor,
             roughness: 0.35,
-            metalness: 0.2
+            metalness: 0.25
         });
 
         const hairMat = new THREE.MeshStandardMaterial({
             color: hairColor,
-            roughness: 0.85,
+            roughness: 0.88,
             metalness: 0.05
         });
 
@@ -107,12 +113,12 @@ export class HumanoidBuilder {
         torsoGroup.add(chest);
 
         // Shirt Button Placket (Center strip with buttons)
-        const placketGeo = new THREE.BoxGeometry(0.03, 0.58, 0.02);
+        const placketGeo = new THREE.BoxGeometry(0.035, 0.58, 0.02);
         const placket = new THREE.Mesh(placketGeo, collarMat);
         placket.position.set(0, 0.30, 0.25);
         torsoGroup.add(placket);
 
-        // Tiny Buttons
+        // Tiny Pearl Buttons
         const buttonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
         for (let y = 0.12; y <= 0.52; y += 0.10) {
             const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.01, 8), buttonMat);
@@ -127,7 +133,7 @@ export class HumanoidBuilder {
         neck.position.y = 0.62;
         torsoGroup.add(neck);
 
-        // Shirt Collar (Open business casual collar)
+        // Shirt Collar (Open business casual collar matching reference)
         const collarLeftGeo = new THREE.BoxGeometry(0.08, 0.06, 0.12);
         const collarLeft = new THREE.Mesh(collarLeftGeo, collarMat);
         collarLeft.position.set(-0.09, 0.58, 0.14);
@@ -150,7 +156,7 @@ export class HumanoidBuilder {
             torsoGroup.add(badgeCard);
         }
 
-        // 3. Head & Hair
+        // 3. Head & Layered Hair
         const headGroup = new THREE.Group();
         headGroup.position.set(0, 0.76, 0);
 
@@ -188,24 +194,33 @@ export class HumanoidBuilder {
         earR.position.set(0.15, 0, 0);
         headGroup.add(earR);
 
-        // Styled Hair Mesh (Matching reference image short styled hair)
-        const hairGeo = new THREE.SphereGeometry(0.165, 16, 16);
-        hairGeo.scale(1.02, 1.05, 1.08);
-        const hairMesh = new THREE.Mesh(hairGeo, hairMat);
-        hairMesh.position.set(0, 0.06, -0.02);
-        hairMesh.rotation.x = -0.15;
-        headGroup.add(hairMesh);
+        // Multi-Layer Styled Wavy Hair Mesh (Matching reference image)
+        const hairBaseGeo = new THREE.SphereGeometry(0.165, 16, 16);
+        hairBaseGeo.scale(1.03, 1.08, 1.10);
+        const hairBase = new THREE.Mesh(hairBaseGeo, hairMat);
+        hairBase.position.set(0, 0.06, -0.02);
+        hairBase.rotation.x = -0.15;
+        headGroup.add(hairBase);
 
-        // Hair Tuft / Bangs
-        const tuftGeo = new THREE.DodecahedronGeometry(0.08, 1);
-        const tuft = new THREE.Mesh(tuftGeo, hairMat);
-        tuft.position.set(0, 0.16, 0.08);
-        headGroup.add(tuft);
+        // Hair Crown Tuft & Waves
+        const tuftGeo1 = new THREE.DodecahedronGeometry(0.085, 1);
+        const tuft1 = new THREE.Mesh(tuftGeo1, hairMat);
+        tuft1.position.set(0, 0.17, 0.06);
+        headGroup.add(tuft1);
+
+        const tuftGeo2 = new THREE.DodecahedronGeometry(0.065, 1);
+        const tuft2 = new THREE.Mesh(tuftGeo2, hairMat);
+        tuft2.position.set(-0.06, 0.15, 0.04);
+        headGroup.add(tuft2);
+
+        const tuft3 = new THREE.Mesh(tuftGeo2, hairMat);
+        tuft3.position.set(0.06, 0.15, 0.04);
+        headGroup.add(tuft3);
 
         torsoGroup.add(headGroup);
         group.add(torsoGroup);
 
-        // 4. Arms (Deltoid -> Upper Arm -> Elbow -> Forearm -> Hand)
+        // 4. Arms (Deltoid -> Upper Arm -> Forearm -> Hand)
         // Left Arm
         const leftArmGroup = new THREE.Group();
         leftArmGroup.position.set(-0.31, 0.50, 0);
@@ -218,16 +233,19 @@ export class HumanoidBuilder {
         upperArmL.castShadow = true;
         leftArmGroup.add(upperArmL);
 
-        const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.26, 12), shirtMat);
-        forearmL.position.set(0, -0.38, 0.02);
-        forearmL.rotation.x = 0.15;
+        const forearmLGroup = new THREE.Group();
+        forearmLGroup.position.set(0, -0.28, 0);
+
+        const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.26, 12), shirtMat);
+        forearmL.position.set(0, -0.12, 0.02);
         forearmL.castShadow = true;
-        leftArmGroup.add(forearmL);
+        forearmLGroup.add(forearmL);
 
-        const handL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), skinMat);
-        handL.position.set(0, -0.53, 0.05);
-        leftArmGroup.add(handL);
+        const handL = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), skinMat);
+        handL.position.set(0, -0.26, 0.04);
+        forearmLGroup.add(handL);
 
+        leftArmGroup.add(forearmLGroup);
         torsoGroup.add(leftArmGroup);
 
         // Right Arm
@@ -242,19 +260,22 @@ export class HumanoidBuilder {
         upperArmR.castShadow = true;
         rightArmGroup.add(upperArmR);
 
-        const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.26, 12), shirtMat);
-        forearmR.position.set(0, -0.38, 0.02);
-        forearmR.rotation.x = 0.15;
+        const forearmRGroup = new THREE.Group();
+        forearmRGroup.position.set(0, -0.28, 0);
+
+        const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.052, 0.26, 12), shirtMat);
+        forearmR.position.set(0, -0.12, 0.02);
         forearmR.castShadow = true;
-        rightArmGroup.add(forearmR);
+        forearmRGroup.add(forearmR);
 
-        const handR = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), skinMat);
-        handR.position.set(0, -0.53, 0.05);
-        rightArmGroup.add(handR);
+        const handR = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), skinMat);
+        handR.position.set(0, -0.26, 0.04);
+        forearmRGroup.add(handR);
 
+        rightArmGroup.add(forearmRGroup);
         torsoGroup.add(rightArmGroup);
 
-        // 5. Legs & Feet (Thigh -> Knee -> Shin -> Dress Shoes)
+        // 5. Legs & Feet (Thigh -> Knee -> Shin -> Shoes)
         // Left Leg
         const leftLegGroup = new THREE.Group();
         leftLegGroup.position.set(-0.13, 0.85, 0);
@@ -264,20 +285,23 @@ export class HumanoidBuilder {
         thighL.castShadow = true;
         leftLegGroup.add(thighL);
 
+        const calfLGroup = new THREE.Group();
+        calfLGroup.position.set(0, -0.42, 0);
+
         const kneeL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), pantsMat);
-        kneeL.position.y = -0.42;
-        leftLegGroup.add(kneeL);
+        calfLGroup.add(kneeL);
 
         const shinL = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.40, 14), pantsMat);
-        shinL.position.y = -0.62;
+        shinL.position.y = -0.20;
         shinL.castShadow = true;
-        leftLegGroup.add(shinL);
+        calfLGroup.add(shinL);
 
         const shoeL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.08, 0.24), shoesMat);
-        shoeL.position.set(0, -0.84, 0.05);
+        shoeL.position.set(0, -0.42, 0.05);
         shoeL.castShadow = true;
-        leftLegGroup.add(shoeL);
+        calfLGroup.add(shoeL);
 
+        leftLegGroup.add(calfLGroup);
         group.add(leftLegGroup);
 
         // Right Leg
@@ -289,20 +313,23 @@ export class HumanoidBuilder {
         thighR.castShadow = true;
         rightLegGroup.add(thighR);
 
+        const calfRGroup = new THREE.Group();
+        calfRGroup.position.set(0, -0.42, 0);
+
         const kneeR = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), pantsMat);
-        kneeR.position.y = -0.42;
-        rightLegGroup.add(kneeR);
+        calfRGroup.add(kneeR);
 
         const shinR = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.40, 14), pantsMat);
-        shinR.position.y = -0.62;
+        shinR.position.y = -0.20;
         shinR.castShadow = true;
-        rightLegGroup.add(shinR);
+        calfRGroup.add(shinR);
 
         const shoeR = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.08, 0.24), shoesMat);
-        shoeR.position.set(0, -0.84, 0.05);
+        shoeR.position.set(0, -0.42, 0.05);
         shoeR.castShadow = true;
-        rightLegGroup.add(shoeR);
+        calfRGroup.add(shoeR);
 
+        rightLegGroup.add(calfRGroup);
         group.add(rightLegGroup);
 
         return {
@@ -312,8 +339,13 @@ export class HumanoidBuilder {
             headMesh,
             leftArm: leftArmGroup,
             rightArm: rightArmGroup,
+            leftForearm: forearmLGroup,
+            rightForearm: forearmRGroup,
             leftLeg: leftLegGroup,
-            rightLeg: rightLegGroup
+            rightLeg: rightLegGroup,
+            leftCalf: calfLGroup,
+            rightCalf: calfRGroup,
+            type: 'human'
         };
     }
 
@@ -324,16 +356,16 @@ export class HumanoidBuilder {
         const {
             armorColor = 0x8a929b,     // Metallic silver/titanium armor
             glowColor = 0x00f0ff,      // Glowing cyan arc reactor
-            accentColor = 0x3a424e     // Dark cyber joints
+            accentColor = 0x323a46     // Dark cyber joints
         } = options;
 
         const group = new THREE.Group();
 
-        // High-end Cyber Materials
+        // High-end Cyber PBR Materials
         const armorMat = new THREE.MeshStandardMaterial({
             color: armorColor,
-            metalness: 0.88,
-            roughness: 0.26
+            metalness: 0.90,
+            roughness: 0.22
         });
 
         const jointMat = new THREE.MeshStandardMaterial({
@@ -345,7 +377,7 @@ export class HumanoidBuilder {
         const glowMat = new THREE.MeshStandardMaterial({
             color: glowColor,
             emissive: glowColor,
-            emissiveIntensity: 2.5,
+            emissiveIntensity: 3.0,
             roughness: 0.1,
             metalness: 0.1
         });
@@ -426,7 +458,7 @@ export class HumanoidBuilder {
         chin.position.set(0, -0.12, 0.06);
         headGroup.add(chin);
 
-        // Subtle Visor Seam
+        // Visor Seam Contour
         const visorSeam = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.008, 8, 16, Math.PI), jointMat);
         visorSeam.rotation.y = Math.PI / 2;
         visorSeam.position.set(0, 0.02, 0.06);
@@ -448,20 +480,22 @@ export class HumanoidBuilder {
         upperArmL.castShadow = true;
         leftArmGroup.add(upperArmL);
 
+        const forearmLGroup = new THREE.Group();
+        forearmLGroup.position.set(0, -0.28, 0);
+
         const elbowL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), jointMat);
-        elbowL.position.y = -0.28;
-        leftArmGroup.add(elbowL);
+        forearmLGroup.add(elbowL);
 
         const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.048, 0.26, 14), armorMat);
-        forearmL.position.set(0, -0.40, 0.02);
-        forearmL.rotation.x = 0.15;
+        forearmL.position.set(0, -0.12, 0.02);
         forearmL.castShadow = true;
-        leftArmGroup.add(forearmL);
+        forearmLGroup.add(forearmL);
 
         const handL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.04), jointMat);
-        handL.position.set(0, -0.55, 0.05);
-        leftArmGroup.add(handL);
+        handL.position.set(0, -0.27, 0.04);
+        forearmLGroup.add(handL);
 
+        leftArmGroup.add(forearmLGroup);
         torsoGroup.add(leftArmGroup);
 
         // Right Arm
@@ -476,20 +510,22 @@ export class HumanoidBuilder {
         upperArmR.castShadow = true;
         rightArmGroup.add(upperArmR);
 
+        const forearmRGroup = new THREE.Group();
+        forearmRGroup.position.set(0, -0.28, 0);
+
         const elbowR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), jointMat);
-        elbowR.position.y = -0.28;
-        rightArmGroup.add(elbowR);
+        forearmRGroup.add(elbowR);
 
         const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.048, 0.26, 14), armorMat);
-        forearmR.position.set(0, -0.40, 0.02);
-        forearmR.rotation.x = 0.15;
+        forearmR.position.set(0, -0.12, 0.02);
         forearmR.castShadow = true;
-        rightArmGroup.add(forearmR);
+        forearmRGroup.add(forearmR);
 
         const handR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, 0.04), jointMat);
-        handR.position.set(0, -0.55, 0.05);
-        rightArmGroup.add(handR);
+        handR.position.set(0, -0.27, 0.04);
+        forearmRGroup.add(handR);
 
+        rightArmGroup.add(forearmRGroup);
         torsoGroup.add(rightArmGroup);
 
         // 5. Cyber Legs
@@ -502,20 +538,23 @@ export class HumanoidBuilder {
         thighL.castShadow = true;
         leftLegGroup.add(thighL);
 
+        const calfLGroup = new THREE.Group();
+        calfLGroup.position.set(0, -0.42, 0);
+
         const kneeL = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), jointMat);
-        kneeL.position.y = -0.42;
-        leftLegGroup.add(kneeL);
+        calfLGroup.add(kneeL);
 
         const shinL = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.40, 14), armorMat);
-        shinL.position.y = -0.62;
+        shinL.position.y = -0.20;
         shinL.castShadow = true;
-        leftLegGroup.add(shinL);
+        calfLGroup.add(shinL);
 
         const footL = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.08, 0.22), armorMat);
-        footL.position.set(0, -0.84, 0.04);
+        footL.position.set(0, -0.42, 0.04);
         footL.castShadow = true;
-        leftLegGroup.add(footL);
+        calfLGroup.add(footL);
 
+        leftLegGroup.add(calfLGroup);
         group.add(leftLegGroup);
 
         // Right Leg
@@ -527,20 +566,23 @@ export class HumanoidBuilder {
         thighR.castShadow = true;
         rightLegGroup.add(thighR);
 
+        const calfRGroup = new THREE.Group();
+        calfRGroup.position.set(0, -0.42, 0);
+
         const kneeR = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), jointMat);
-        kneeR.position.y = -0.42;
-        rightLegGroup.add(kneeR);
+        calfRGroup.add(kneeR);
 
         const shinR = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.065, 0.40, 14), armorMat);
-        shinR.position.y = -0.62;
+        shinR.position.y = -0.20;
         shinR.castShadow = true;
-        rightLegGroup.add(shinR);
+        calfRGroup.add(shinR);
 
         const footR = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.08, 0.22), armorMat);
-        footR.position.set(0, -0.84, 0.04);
+        footR.position.set(0, -0.42, 0.04);
         footR.castShadow = true;
-        rightLegGroup.add(footR);
+        calfRGroup.add(footR);
 
+        rightLegGroup.add(calfRGroup);
         group.add(rightLegGroup);
 
         return {
@@ -549,9 +591,193 @@ export class HumanoidBuilder {
             headGroup,
             leftArm: leftArmGroup,
             rightArm: rightArmGroup,
+            leftForearm: forearmLGroup,
+            rightForearm: forearmRGroup,
             leftLeg: leftLegGroup,
             rightLeg: rightLegGroup,
-            reactorMesh: coreMesh
+            leftCalf: calfLGroup,
+            rightCalf: calfRGroup,
+            reactorMesh: coreMesh,
+            type: 'cyber'
         };
+    }
+
+    /**
+     * Applies full-body kinematic animation poses matching the reference image
+     * @param {Object} model - The humanoid parts object
+     * @param {string} state - 'idle', 'run', 'jump', 'crouch'
+     * @param {number} time - Animation time in seconds
+     * @param {number} speed - Current velocity speed
+     */
+    static applyPose(model, state, time, speed = 4.0) {
+        if (!model) return;
+
+        const {
+            torsoGroup,
+            headGroup,
+            leftArm,
+            rightArm,
+            leftForearm,
+            rightForearm,
+            leftLeg,
+            rightLeg,
+            leftCalf,
+            rightCalf,
+            reactorMesh
+        } = model;
+
+        // Arc reactor pulsing glow (for cyber android)
+        if (reactorMesh && reactorMesh.material) {
+            const pulse = 2.4 + Math.sin(time * 6.0) * 0.8;
+            reactorMesh.material.emissiveIntensity = pulse;
+        }
+
+        if (state === 'jump') {
+            // === JUMPING POSE (Matches reference image jump position) ===
+            // Torso arched upright / slightly tilted back
+            if (torsoGroup) {
+                torsoGroup.rotation.x = -0.08;
+                torsoGroup.rotation.z = 0;
+            }
+            if (headGroup) {
+                headGroup.rotation.x = -0.1;
+            }
+
+            // Arms: Raised outwards & forward at 45 degrees, forearms bent forward
+            if (leftArm) {
+                leftArm.rotation.set(-0.55, 0, 0.85);
+            }
+            if (rightArm) {
+                rightArm.rotation.set(-0.55, 0, -0.85);
+            }
+            if (leftForearm) {
+                leftForearm.rotation.x = -0.75;
+            }
+            if (rightForearm) {
+                rightForearm.rotation.x = -0.75;
+            }
+
+            // Legs: Knees tucked and flared outwards, calves bent backwards
+            if (leftLeg) {
+                leftLeg.rotation.set(0.65, 0, -0.32);
+            }
+            if (rightLeg) {
+                rightLeg.rotation.set(0.65, 0, 0.32);
+            }
+            if (leftCalf) {
+                leftCalf.rotation.x = 1.15;
+            }
+            if (rightCalf) {
+                rightCalf.rotation.x = 1.15;
+            }
+
+        } else if (state === 'run') {
+            // === RUNNING SPRINT POSE (Matches reference image sprint position) ===
+            const sprintFactor = Math.min(2.0, Math.max(0.8, speed / 4.0));
+            const cycle = time * 9.5 * sprintFactor;
+            const legSwing = Math.sin(cycle) * 0.85 * sprintFactor;
+            const armSwing = -legSwing;
+
+            // Torso forward lean
+            if (torsoGroup) {
+                torsoGroup.rotation.x = 0.22 * sprintFactor;
+                torsoGroup.rotation.y = Math.sin(cycle) * 0.12;
+                torsoGroup.rotation.z = Math.cos(cycle) * 0.05;
+            }
+            if (headGroup) {
+                headGroup.rotation.x = -0.12 * sprintFactor;
+            }
+
+            // Arms: Alternating forward/backward swing with 90° bent elbows
+            if (leftArm) {
+                leftArm.rotation.set(armSwing * 0.95, 0, 0.15);
+            }
+            if (rightArm) {
+                rightArm.rotation.set(-armSwing * 0.95, 0, -0.15);
+            }
+            if (leftForearm) {
+                leftForearm.rotation.x = -0.85 + Math.sin(cycle) * 0.3;
+            }
+            if (rightForearm) {
+                rightForearm.rotation.x = -0.85 - Math.sin(cycle) * 0.3;
+            }
+
+            // Legs: High knee drive on forward leg, trailing calf flexion
+            if (leftLeg) {
+                leftLeg.rotation.set(legSwing, 0, 0.05);
+            }
+            if (rightLeg) {
+                rightLeg.rotation.set(-legSwing, 0, -0.05);
+            }
+            if (leftCalf) {
+                // Calves bend more on backward swing (trailing leg)
+                leftCalf.rotation.x = Math.max(0, -legSwing * 1.3);
+            }
+            if (rightCalf) {
+                rightCalf.rotation.x = Math.max(0, legSwing * 1.3);
+            }
+
+        } else if (state === 'crouch') {
+            // === CROUCH STEALTH POSE ===
+            if (torsoGroup) {
+                torsoGroup.rotation.set(0.45, 0, 0);
+            }
+            if (headGroup) {
+                headGroup.rotation.set(-0.35, 0, 0);
+            }
+            if (leftArm) {
+                leftArm.rotation.set(-0.3, 0, 0.3);
+            }
+            if (rightArm) {
+                rightArm.rotation.set(-0.3, 0, -0.3);
+            }
+            if (leftForearm) leftForearm.rotation.x = -0.6;
+            if (rightForearm) rightForearm.rotation.x = -0.6;
+
+            if (leftLeg) leftLeg.rotation.set(0.9, 0, -0.1);
+            if (rightLeg) rightLeg.rotation.set(0.9, 0, 0.1);
+            if (leftCalf) leftCalf.rotation.x = 1.3;
+            if (rightCalf) rightCalf.rotation.x = 1.3;
+
+        } else {
+            // === IDLE / STANDING A-POSE (Matches reference image standing stance) ===
+            const breathe = Math.sin(time * 2.2) * 0.02;
+
+            if (torsoGroup) {
+                torsoGroup.rotation.set(breathe * 0.5, 0, 0);
+                torsoGroup.position.y = 0.98 + breathe * 0.2;
+            }
+            if (headGroup) {
+                headGroup.rotation.set(-breathe * 0.3, 0, 0);
+            }
+
+            // Natural relaxed arms resting at 18-22° angle
+            if (leftArm) {
+                leftArm.rotation.set(0.04, 0, 0.28 + breathe);
+            }
+            if (rightArm) {
+                rightArm.rotation.set(0.04, 0, -0.28 - breathe);
+            }
+            if (leftForearm) {
+                leftForearm.rotation.x = -0.12;
+            }
+            if (rightForearm) {
+                rightForearm.rotation.x = -0.12;
+            }
+
+            // Straight natural legs with slight stance width
+            if (leftLeg) {
+                leftLeg.rotation.set(0, 0, 0.04);
+            }
+            if (rightLeg) {
+                rightLeg.rotation.set(0, 0, -0.04);
+            }
+            if (leftCalf) {
+                leftCalf.rotation.x = 0;
+            }
+            if (rightCalf) {
+                rightCalf.rotation.x = 0;
+            }
+        }
     }
 }

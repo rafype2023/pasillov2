@@ -29,39 +29,43 @@ export class Game {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.toneMappingExposure = 1.12;
         this.container.appendChild(this.renderer.domElement);
 
         // Scene & Camera
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x10141a);
-        this.scene.fog = new THREE.FogExp2(0x10141a, 0.018);
+        this.scene.background = new THREE.Color(0x181e28);
 
-        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 150);
+        this.camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 150);
 
-        // Ambient Light
-        this.ambientLight = new THREE.AmbientLight(0xfffaed, 0.75);
+        // Ambient Office Light (Warm soft corporate ambient)
+        this.ambientLight = new THREE.AmbientLight(0xfff8ee, 0.95);
         this.scene.add(this.ambientLight);
 
-        // Directional Sun / Overhead Key Light (Casting long shadows like in reference)
-        this.dirLight = new THREE.DirectionalLight(0xffeedd, 1.3);
-        this.dirLight.position.set(24, 32, 18);
+        // Overhead Key Light along the Spine
+        this.dirLight = new THREE.DirectionalLight(0xffeedd, 1.4);
+        this.dirLight.position.set(0, 18, 6);
         this.dirLight.castShadow = true;
         this.dirLight.shadow.mapSize.width = 2048;
         this.dirLight.shadow.mapSize.height = 2048;
         this.dirLight.shadow.camera.near = 0.5;
-        this.dirLight.shadow.camera.far = 100;
-        this.dirLight.shadow.camera.left = -35;
-        this.dirLight.shadow.camera.right = 35;
-        this.dirLight.shadow.camera.top = 35;
-        this.dirLight.shadow.camera.bottom = -35;
-        this.dirLight.shadow.bias = -0.0005;
+        this.dirLight.shadow.camera.far = 60;
+        this.dirLight.shadow.camera.left = -25;
+        this.dirLight.shadow.camera.right = 25;
+        this.dirLight.shadow.camera.top = 25;
+        this.dirLight.shadow.camera.bottom = -25;
+        this.dirLight.shadow.bias = -0.0004;
         this.scene.add(this.dirLight);
 
-        // Fill Light
-        const fillLight = new THREE.DirectionalLight(0xaaccff, 0.4);
-        fillLight.position.set(-20, 20, -20);
-        this.scene.add(fillLight);
+        // Fill Light East (Command Center / Glass room)
+        const fillEast = new THREE.DirectionalLight(0xddeeff, 0.8);
+        fillEast.position.set(16, 12, -2);
+        this.scene.add(fillEast);
+
+        // Fill Light West (Manager pods)
+        const fillWest = new THREE.DirectionalLight(0xfff0dd, 0.7);
+        fillWest.position.set(-16, 12, -2);
+        this.scene.add(fillWest);
 
         // Resize handler
         window.addEventListener('resize', () => {

@@ -430,7 +430,7 @@ body, html {
 }
 
 /* =========================================
-   IN-GAME HUD (MATT WOLFE REFERENCE STYLING)
+   IN-GAME HUD (MATCHING REFERENCE RENDER)
    ========================================= */
 #game-hud {
     position: absolute;
@@ -439,18 +439,82 @@ body, html {
     z-index: 5;
 }
 
-/* 1. Top-Left Player Status Card */
+/* Iconic Golden NIVEL 1 Badge (Top-Left) */
+.hud-golden-badge {
+    position: absolute;
+    top: 1.4rem;
+    left: 1.4rem;
+    background: rgba(12, 14, 18, 0.92);
+    border: 2.5px solid #eab308;
+    border-radius: 12px;
+    padding: 0.45rem 1.6rem;
+    box-shadow: 0 0 18px rgba(234, 179, 8, 0.5), inset 0 0 12px rgba(234, 179, 8, 0.2);
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.hud-golden-badge span {
+    font-family: 'Outfit', 'Cinzel', sans-serif;
+    font-size: 1.45rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    color: #facc15;
+    text-shadow: 0 2px 8px rgba(234, 179, 8, 0.7);
+}
+
+/* 1. Top-Left Player Status Card (Positioned below the golden badge) */
 .hud-player-card {
     position: absolute;
-    top: 1.2rem;
-    left: 1.2rem;
+    top: 5.4rem;
+    left: 1.4rem;
     width: 260px;
     background: var(--hud-bg);
     border: 1px solid var(--hud-border);
     border-radius: 14px;
-    padding: 1.0rem 1.2rem;
+    padding: 0.9rem 1.1rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     pointer-events: auto;
+    backdrop-filter: blur(8px);
+}
+
+/* Bottom-Right Level Title & Minimap Container */
+.spine-bottom-right-container {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.spine-level-title {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #e2e8f0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+}
+
+.spine-minimap-card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 0.45rem 0.6rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+}
+
+.spine-minimap-header {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.70rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
 }
 
 .player-header-row {
@@ -871,6 +935,20 @@ body, html {
     color: #ffffff;
     border-color: rgba(52, 211, 153, 0.6);
     box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+}
+
+.btn-jump {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    border-color: rgba(96, 165, 250, 0.6);
+    box-shadow: 0 0 18px rgba(37, 99, 235, 0.4);
+}
+
+.btn-skin {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #ffffff;
+    border-color: rgba(167, 139, 250, 0.6);
+    box-shadow: 0 0 18px rgba(124, 58, 237, 0.4);
 }
 
 /* Hide touch joystick on large desktop screens by default unless touched */
