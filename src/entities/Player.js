@@ -34,10 +34,10 @@ export class Player {
         this.isDead = false;
 
         // Free 3D Orbit Camera (Interior tactical CCTV & Third Person)
-        this.cameraMode = 'isometric'; // 'isometric', 'third', 'first'
-        this.isoDistance = 9.8; // Interior distance beneath ceiling
-        this.isoPitch = 0.32; // ~18.5 degrees tilt (matching reference interior perspective)
-        this.isoYaw = 0; // Aligned directly down the central Spine channel
+        this.cameraMode = 'third'; // 'isometric', 'third', 'first'
+        this.isoDistance = 16; // Interior distance beneath ceiling
+        this.isoPitch = 0.78; // ~18.5 degrees tilt (matching reference interior perspective)
+        this.isoYaw = -0.35; // Aligned directly down the central Spine channel
         this.zoomLevel = 1.0;
         this.isDraggingMouse = false;
         this.previousMouseX = 0;
@@ -92,7 +92,7 @@ export class Player {
         this.headMesh = this.modelParts.headMesh;
 
         // Glasses rim (if human)
-        if (this.currentSkin === 'human') {
+        if (this.currentSkin === 'human' && !this.modelParts.detailed) {
             const glassGeo = new THREE.BoxGeometry(0.24, 0.06, 0.03);
             const glassMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
             const glasses = new THREE.Mesh(glassGeo, glassMat);
@@ -107,7 +107,7 @@ export class Player {
         this.maskMesh.rotation.x = Math.PI / 2;
         this.maskMesh.position.set(0, -0.04, 0.15);
         this.maskMesh.visible = this.isMasked;
-        this.headGroup.add(this.maskMesh);
+        (this.modelParts.faceAnchor || this.headGroup).add(this.maskMesh);
 
         // Carrying Item Holder in front of character
         this.itemHolder = new THREE.Group();
@@ -130,7 +130,9 @@ export class Player {
 
     initControls() {
         window.addEventListener('keydown', (e) => {
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
             this.keys[e.code] = true;
+            if (e.repeat) return;
             if (e.code === 'KeyV') {
                 this.toggleCameraMode();
             }
@@ -147,6 +149,8 @@ export class Player {
                 this.jump();
             }
         });
+
+        window.addEventListener('blur', () => { this.keys = {}; this.touchSprint = false; this.isDraggingMouse = false; });
 
         window.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
@@ -275,7 +279,8 @@ export class Player {
                 const btnSkin = gp.buttons[4]?.pressed; // LB
 
                 if (btnJump && this.isGrounded) this.jump();
-                if (btnSkin) this.toggleSkin();
+                if (btnSkin && !this.gamepadSkinDown) this.toggleSkin();
+                this.gamepadSkinDown = btnSkin;
 
                 return { x: lx, z: lz, sprint: btnSprint, crouch: btnCrouch };
             }
@@ -301,6 +306,9 @@ export class Player {
     }
 
     spawn(spawnVec) {
+        this.mesh.rotation.set(0, 0, 0);
+        this.keys = {};
+        this.maskMesh.visible = false;
         this.position.copy(spawnVec);
         this.position.y = 0;
         this.mesh.position.copy(this.position);
@@ -360,6 +368,7 @@ export class Player {
             this.position.y += this.verticalVelocity * delta;
 
             if (this.position.y <= 0) {
+                sounds.playLanding();
                 this.position.y = 0;
                 this.verticalVelocity = 0;
                 this.isGrounded = true;
@@ -368,7 +377,8 @@ export class Player {
 
         // Crouch & Sprint
         this.isCrouching = this.isGrounded && !!(this.keys['KeyC'] || this.keys['ControlLeft'] || this.touchCrouch || gp.crouch);
-        const canSprint = !this.isCrouching && (this.stamina > 5) && (this.keys['ShiftLeft'] || this.keys['ShiftRight'] || this.touchSprint || gp.sprint);
+        const wantsMove = ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(k => this.keys[k]) || Math.hypot(this.touchMovement.x, this.touchMovement.y, gp.x, gp.z) > 0.1;
+        const canSprint = wantsMove && !this.isCrouching && (this.stamina > 5) && (this.keys['ShiftLeft'] || this.keys['ShiftRight'] || this.touchSprint || gp.sprint);
         this.isSprinting = canSprint;
 
         let speed = 4.4;
@@ -413,12 +423,15 @@ export class Player {
             if (moveVec.length() > 1.0) moveVec.normalize();
 
             // Rotate input relative to camera view
-            if (this.cameraMode === 'isometric') {
+            if (this.cameraMode !== 'first') {
+                moveVec.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.isoYaw);
+            } else {
                 moveVec.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.isoYaw);
             }
 
-            this.velocity.x = moveVec.x * speed;
-            this.velocity.z = moveVec.z * speed;
+            const acceleration = 1 - Math.exp(-18 * delta);
+            this.velocity.x = THREE.MathUtils.lerp(this.velocity.x, moveVec.x * speed, acceleration);
+            this.velocity.z = THREE.MathUtils.lerp(this.velocity.z, moveVec.z * speed, acceleration);
 
             // Turn character smoothly toward movement direction
             const targetAngle = Math.atan2(moveVec.x, moveVec.z);
@@ -427,34 +440,26 @@ export class Player {
             while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
             this.facingAngle += angleDiff * Math.min(1.0, delta * 14);
 
-            // Footstep audio
-            if (this.isGrounded) {
-                this.footstepTimer += delta * (speed / 4);
-                if (this.footstepTimer > 0.32) {
-                    this.footstepTimer = 0;
-                    sounds.playFootstep();
-                }
-            }
         } else {
-            this.velocity.x = 0;
-            this.velocity.z = 0;
+            this.velocity.x = THREE.MathUtils.damp(this.velocity.x, 0, 22, delta);
+            this.velocity.z = THREE.MathUtils.damp(this.velocity.z, 0, 22, delta);
+            if (this.velocity.lengthSq() < 0.0025) this.velocity.set(0, 0, 0);
         }
 
-        // Determine pose state
-        let poseState = 'idle';
-        if (!this.isGrounded) {
-            poseState = 'jump';
-        } else if (this.isCrouching) {
-            poseState = 'crouch';
-        } else if (isMoving) {
-            poseState = 'run';
-        }
-
-        // Apply Next-Gen High-Fidelity Kinematic Pose matching reference image
-        HumanoidBuilder.applyPose(this.modelParts, poseState, this.animTime, speed);
-
-        // Apply Collision against FloorPlan obstacles
+        const beforeMove = this.position.clone();
+        this.cameraColliders = colliders;
         this.applyCollision(delta, colliders);
+        const distance = Math.hypot(this.position.x - beforeMove.x, this.position.z - beforeMove.z);
+        const actualSpeed = distance / Math.max(delta, 0.001);
+        if (this.isGrounded && distance > 0.001) {
+            this.footstepTimer += distance;
+            if (this.footstepTimer > (this.isSprinting ? 1.6 : 1.05)) {
+                this.footstepTimer = 0;
+                sounds.playFootstep(this.isSprinting ? 1 : this.isCrouching ? 0.3 : 0.65);
+            }
+        }
+        let poseState = !this.isGrounded ? 'jump' : this.isCrouching ? 'crouch' : actualSpeed > 0.1 ? 'run' : 'idle';
+        HumanoidBuilder.applyPose(this.modelParts, poseState, this.animTime, actualSpeed);
 
         // Position and orient mesh
         this.mesh.position.copy(this.position);
@@ -505,6 +510,7 @@ export class Player {
     }
 
     updateCamera(delta) {
+        this.mesh.visible = this.cameraMode !== 'first';
         if (this.cameraMode === 'isometric') {
             const dist = this.isoDistance * this.zoomLevel;
             const horizDist = dist * Math.cos(this.isoPitch);
@@ -517,17 +523,27 @@ export class Player {
             );
 
             const targetCamPos = this.position.clone().add(camOffset);
-            this.camera.position.lerp(targetCamPos, delta * 12);
+            this.camera.position.lerp(targetCamPos, 1 - Math.exp(-10 * delta));
             this.camera.lookAt(this.position.x, this.position.y + 0.7, this.position.z);
         } else if (this.cameraMode === 'third') {
-            const offset = new THREE.Vector3(0, 2.0, 3.8);
-            offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.facingAngle);
+            const offset = new THREE.Vector3(0.42, 1.75 + (this.isoPitch - 0.78) * 1.2, 2.9 * this.zoomLevel);
+            offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.isoYaw);
             const targetCamPos = this.position.clone().add(offset);
-            this.camera.position.lerp(targetCamPos, delta * 10);
-            this.camera.lookAt(this.position.x, this.position.y + 1.2, this.position.z);
+            const focus = this.position.clone().add(new THREE.Vector3(0, 1.25, 0));
+            const direction = targetCamPos.clone().sub(focus).normalize();
+            const ray = new THREE.Ray(focus, direction);
+            let distance = focus.distanceTo(targetCamPos);
+            for (const box of this.cameraColliders || []) {
+                if (box.max.y < 2.5) continue;
+                const hit = ray.intersectBox(box, new THREE.Vector3());
+                if (hit) distance = Math.min(distance, Math.max(0.25, focus.distanceTo(hit) - 0.25));
+            }
+            targetCamPos.copy(focus).addScaledVector(direction, distance);
+            this.camera.position.lerp(targetCamPos, 1 - Math.exp(-10 * delta));
+            this.camera.lookAt(this.position.x, this.position.y + 1.25, this.position.z);
         } else {
-            this.camera.position.set(this.position.x, this.isCrouching ? 1.1 : 1.6, this.position.z);
-            this.camera.rotation.set(0, this.facingAngle, 0, 'YXZ');
+            this.camera.position.set(this.position.x, this.position.y + (this.isCrouching ? 1.1 : 1.6), this.position.z);
+            this.camera.rotation.set(0, this.isoYaw, 0, 'YXZ');
         }
     }
 }

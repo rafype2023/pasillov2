@@ -15,6 +15,7 @@ export class HUD {
     }
 
     initEventListeners() {
+        document.getElementById('btn-result-menu')?.addEventListener('click', () => this.game.showMenu());
         document.getElementById('btn-mute')?.addEventListener('click', () => {
             const muted = sounds.toggleMute();
             const btn = document.getElementById('btn-mute');
@@ -76,8 +77,11 @@ export class HUD {
 
         // Skin & Level tag
         this.updateSkinButton();
+        this.updateCamButton();
+        const topBadge = document.querySelector('#hud-top-level-badge span');
+        if (topBadge) topBadge.innerText = `NIVEL ${levelIndex + 1}`;
         const levelTag = document.getElementById('hud-level-tag');
-        if (levelTag) levelTag.innerText = `LEVEL ${levelIndex + 1}`;
+        if (levelTag) levelTag.innerText = `NIVEL ${levelIndex + 1}`;
 
         // Timer update
         const timerEl = document.getElementById('hud-timer-val');
@@ -102,11 +106,11 @@ export class HUD {
             const infVal = Math.round(player.infection);
             const healthPct = Math.max(0, 100 - infVal);
             if (healthBar) healthBar.style.width = `${healthPct}%`;
-            if (healthLabel) healthLabel.innerText = player.isMasked ? 'MASK IMMUNITY' : 'HEALTH';
+            if (healthLabel) healthLabel.innerText = player.isMasked ? 'PROTEGIDO' : 'SALUD';
             if (healthVal) healthVal.innerText = `${healthPct}%`;
 
             if (staminaBar) staminaBar.style.width = `${Math.round(player.stamina)}%`;
-            if (staminaLabel) staminaLabel.innerText = 'STAMINA';
+            if (staminaLabel) staminaLabel.innerText = 'ENERGÍA';
             if (staminaVal) staminaVal.innerText = `${Math.round(player.stamina)}%`;
 
             // 45-Second Safe Place Relocation Countdown
@@ -117,11 +121,11 @@ export class HUD {
         } else if (levelIndex === 1) { // Lounge Race
             const stam = Math.round(player.stamina);
             if (healthBar) healthBar.style.width = `100%`;
-            if (healthLabel) healthLabel.innerText = 'ENERGY';
+            if (healthLabel) healthLabel.innerText = 'SALUD';
             if (healthVal) healthVal.innerText = `100%`;
 
             if (staminaBar) staminaBar.style.width = `${stam}%`;
-            if (staminaLabel) staminaLabel.innerText = (player.boostTimer > 0) ? 'TURBO BOOST' : 'STAMINA';
+            if (staminaLabel) staminaLabel.innerText = (player.boostTimer > 0) ? 'TURBO BOOST' : 'ENERGÍA';
             if (staminaVal) staminaVal.innerText = `${stam}%`;
 
             if (!currentLevel.raceStarted) {
@@ -136,11 +140,11 @@ export class HUD {
             const hp = Math.max(0, Math.round(player.health));
             const stam = Math.max(0, Math.round(player.stamina));
             if (healthBar) healthBar.style.width = `${hp}%`;
-            if (healthLabel) healthLabel.innerText = player.isCrouching ? 'HEALTH (AGACHADO / A COBIJO)' : 'HEALTH (VIDA)';
+            if (healthLabel) healthLabel.innerText = player.isCrouching ? 'SALUD · AGACHADO' : 'SALUD';
             if (healthVal) healthVal.innerText = `${hp}%`;
 
             if (staminaBar) staminaBar.style.width = `${stam}%`;
-            if (staminaLabel) staminaLabel.innerText = 'STAMINA';
+            if (staminaLabel) staminaLabel.innerText = 'ENERGÍA';
             if (staminaVal) staminaVal.innerText = `${stam}%`;
 
             const hits = currentLevel.hitsReceived || 0;
@@ -186,28 +190,17 @@ export class HUD {
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, w, h);
 
-        // Draw Authentic Floorplan Map Image (/assets/plano_map.png)
-        if (this.planoImg && this.planoImg.complete && this.planoImg.naturalWidth > 0) {
-            ctx.globalAlpha = 0.60;
-            ctx.drawImage(this.planoImg, 4, 4, w - 8, h - 8);
-            ctx.globalAlpha = 1.0;
-        }
-
         const mapX = (x) => ((x + 28) / 56) * (w - 16) + 8;
         const mapY = (z) => ((z + 20) / 40) * (h - 16) + 8;
-
-        // Central Spine (Highlighted in Red CAD zone matching reference image)
-        const spineX1 = mapX(-3.0);
-        const spineX2 = mapX(3.0);
-        const spineY1 = mapY(-9);
-        const spineY2 = mapY(9);
-
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.75)';
-        ctx.fillRect(spineX1, spineY1, spineX2 - spineX1, spineY2 - spineY1);
-
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(spineX1, spineY1, spineX2 - spineX1, spineY2 - spineY1);
+        ctx.fillStyle = '#6a8988';
+        for (const box of this.game.floorPlan.colliders) {
+            ctx.fillRect(mapX(box.min.x), mapY(box.min.z), Math.max(1, mapX(box.max.x)-mapX(box.min.x)), Math.max(1, mapY(box.max.z)-mapY(box.min.z)));
+        }
+        const target = levelIndex === 0 ? currentLevel.safeStationPos : levelIndex === 1 ? currentLevel.finishTarget : this.game.floorPlan.exits[0]?.pos;
+        if (target) {
+            ctx.fillStyle = '#a9e698'; ctx.beginPath();
+            ctx.arc(mapX(target.x), mapY(target.z), 4, 0, Math.PI * 2); ctx.fill();
+        }
 
         // Draw Player position as a pulsing white beacon
         const px = mapX(player.position.x);

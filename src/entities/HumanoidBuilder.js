@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createDetailedHuman } from './RealisticHuman.js';
 
 /**
  * Next-Gen High-Fidelity Humanoid & Cyber Android Model Builder
@@ -17,6 +18,8 @@ export class HumanoidBuilder {
      * Builds a realistic human character in business casual attire
      */
     static createRealisticHumanMesh(options = {}) {
+        const detailed = createDetailedHuman(options);
+        if (detailed) return detailed;
         const {
             shirtColor = 0xa4c6eb,    // Light blue button-up dress shirt (as in reference image)
             pantsColor = 0x1e232a,    // Charcoal dark dress slacks
@@ -611,6 +614,29 @@ export class HumanoidBuilder {
      */
     static applyPose(model, state, time, speed = 4.0) {
         if (!model) return;
+        if (model.detailed) {
+            model.update(state, time, speed);
+            return;
+        }
+        const parts = ['torsoGroup', 'headGroup', 'leftArm', 'rightArm', 'leftForearm', 'rightForearm', 'leftLeg', 'rightLeg', 'leftCalf', 'rightCalf'];
+        const previous = parts.map(key => model[key]?.quaternion.clone());
+        const oldHeight = model.torsoGroup?.position.y ?? 0.98;
+        const dt = model.poseTime === undefined ? 1 / 60 : Math.max(0, Math.min(0.1, time - model.poseTime));
+        model.poseTime = time;
+        model.gaitPhase = (model.gaitPhase || 0) + dt * (state === 'run' ? 7 + speed * 0.9 : 2);
+        this.setPose(model, state, time, speed);
+        const blend = 1 - Math.exp(-14 * dt);
+        parts.forEach((key, i) => {
+            if (model[key] && previous[i]) model[key].quaternion.slerpQuaternions(previous[i], model[key].quaternion.clone(), blend);
+        });
+        if (model.torsoGroup) {
+            const height = state === 'crouch' ? 0.73 : 0.98 + (state === 'run' ? Math.abs(Math.sin(model.gaitPhase)) * 0.035 : Math.sin(time * 2.2) * 0.005);
+            model.torsoGroup.position.y = THREE.MathUtils.lerp(oldHeight, height, blend);
+        }
+    }
+
+    static setPose(model, state, time, speed = 4.0) {
+        if (!model) return;
 
         const {
             torsoGroup,
@@ -673,8 +699,8 @@ export class HumanoidBuilder {
 
         } else if (state === 'run') {
             // === RUNNING SPRINT POSE (Matches reference image sprint position) ===
-            const sprintFactor = Math.min(2.0, Math.max(0.8, speed / 4.0));
-            const cycle = time * 9.5 * sprintFactor;
+            const sprintFactor = Math.min(1.25, Math.max(0.55, speed / 6.0));
+            const cycle = model.gaitPhase || 0;
             const legSwing = Math.sin(cycle) * 0.85 * sprintFactor;
             const armSwing = -legSwing;
 

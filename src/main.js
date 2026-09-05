@@ -7,6 +7,12 @@ import { LoungeRaceLevel } from './levels/LoungeRaceLevel.js';
 import { ActiveShooterLevel } from './levels/ActiveShooterLevel.js';
 import { HUD } from './ui/HUD.js';
 import { sounds } from './audio/SoundEffects.js';
+import { loadHumanModels } from './entities/RealisticHuman.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 export class Game {
     constructor() {
@@ -25,21 +31,29 @@ export class Game {
         // Renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.12;
+        this.renderer.toneMappingExposure = 1.0;
         this.container.appendChild(this.renderer.domElement);
 
         // Scene & Camera
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x181e28);
+        this.scene.background = new THREE.Color(0x182b30);
+        this.scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x61594b, 0.65));
+        const room = new RoomEnvironment();
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        this.environmentTarget = pmrem.fromScene(room, 0.04);
+        this.scene.environment = this.environmentTarget.texture;
+        this.scene.environmentIntensity = 0.35;
+        room.dispose();
+        pmrem.dispose();
 
-        this.camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 150);
+        this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.08, 100);
 
         // Ambient Office Light (Warm soft corporate ambient)
-        this.ambientLight = new THREE.AmbientLight(0xfff8ee, 0.95);
+        this.ambientLight = new THREE.AmbientLight(0xfff8ee, 0.45);
         this.scene.add(this.ambientLight);
 
         // Overhead Key Light along the Spine
@@ -67,11 +81,20 @@ export class Game {
         fillWest.position.set(-16, 12, -2);
         this.scene.add(fillWest);
 
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(new RenderPass(this.scene, this.camera));
+        this.contactShadows = new GTAOPass(this.scene, this.camera, window.innerWidth, window.innerHeight);
+        this.contactShadows.blendIntensity = 0.65;
+        this.contactShadows.updateGtaoMaterial({radius: 0.4, distanceExponent: 1, thickness: 0.75, samples: 8});
+        this.composer.addPass(this.contactShadows);
+        this.composer.addPass(new OutputPass());
+
         // Resize handler
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.composer.setSize(window.innerWidth, window.innerHeight);
         });
     }
 
@@ -84,6 +107,8 @@ export class Game {
 
         // Player (Guillo)
         this.player = new Player(this.scene, this.camera, this.renderer.domElement);
+        this.player.spawn(this.floorPlan.spawnPoint);
+        this.player.updateCamera(1);
 
         // Levels
         this.levels = [
@@ -150,7 +175,6 @@ export class Game {
 
         // Autoplay on startup with muted fallback for browser policy
         video.muted = true;
-        sounds.init();
         video.play().catch(err => {
             console.warn('Autoplay notice:', err);
         });
@@ -257,7 +281,9 @@ export class Game {
 
         // Start the level logic
         this.currentLevel.start();
+        this.hud.missionTime = 15 * 60;
         sounds.init();
+        sounds.setAmbience(true);
     }
 
     restartLevel() {
@@ -265,6 +291,7 @@ export class Game {
     }
 
     nextLevel() {
+        sounds.setAmbience(false);
         if (this.currentLevel) {
             this.currentLevel.cleanup();
             this.currentLevel = null;
@@ -276,6 +303,7 @@ export class Game {
     }
 
     showMenu() {
+        sounds.setAmbience(false);
         if (this.currentLevel) {
             this.currentLevel.cleanup();
             this.currentLevel = null;
@@ -292,22 +320,28 @@ export class Game {
         const delta = Math.min(this.clock.getDelta(), 0.1);
 
         // Update Player
-        if (this.player) {
+        const active = this.currentLevel && !this.currentLevel.isComplete && !this.currentLevel.isFailed && !document.hidden;
+        const countdown = this.currentLevelIndex === 1 && !this.currentLevel?.raceStarted;
+        if (active && !countdown) {
             this.player.update(delta, this.floorPlan.colliders);
+        } else {
+            this.player.updateCamera(delta);
         }
+        this.floorPlan.updateView(this.camera);
 
         // Update Current Level
-        if (this.currentLevel && !this.currentLevel.isComplete && !this.currentLevel.isFailed) {
+        if (active) {
             this.currentLevel.update(delta, this.camera);
         }
 
         // Update Particles
         if (this.particles) {
-            this.particles.update(delta);
+            this.particles.update(delta, this.camera);
         }
 
         // Update HUD
         if (this.hud && this.currentLevel && this.player) {
+            if (active) this.hud.missionTime = Math.max(0, this.hud.missionTime - delta);
             this.hud.update(this.currentLevelIndex, this.currentLevel, this.player);
 
             // Check Win / Lose Conditions
@@ -319,14 +353,27 @@ export class Game {
         }
 
         // Render Scene
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 }
 
 // Instantiate Game reliably
-function startApp() {
-    if (!window.game) {
+async function startApp() {
+    if (window.game || window.gameLoading) return;
+    window.gameLoading = true;
+    const loading = document.createElement('div');
+    loading.className = 'character-loading';
+    loading.setAttribute('role', 'status');
+    loading.textContent = 'Preparando personajes 3D…';
+    document.body.appendChild(loading);
+    try {
+        await loadHumanModels(progress => { loading.textContent = `Preparando personajes 3D · ${Math.round(progress * 100)}%`; });
         window.game = new Game();
+        loading.remove();
+    } catch (error) {
+        console.error('No se pudieron cargar los personajes', error);
+        loading.textContent = 'No se pudieron cargar los personajes. Recarga la página para intentarlo de nuevo.';
+        window.gameLoading = false;
     }
 }
 

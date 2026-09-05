@@ -13,7 +13,7 @@ class SoundEngine {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this.ctx = new AudioContext();
             this.masterGain = this.ctx.createGain();
-            this.masterGain.gain.value = 0.6;
+            this.masterGain.gain.value = this.isMuted ? 0 : 0.6;
             this.masterGain.connect(this.ctx.destination);
         }
         if (this.ctx.state === 'suspended') {
@@ -29,29 +29,51 @@ class SoundEngine {
         return this.isMuted;
     }
 
-    playFootstep() {
+    noiseBuffer() {
+        if (!this.noise) {
+            this.noise = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+            const data = this.noise.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        }
+        return this.noise;
+    }
+
+    setAmbience(active) {
+        if (!this.ctx) return;
+        if (!this.ambience) {
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = this.noiseBuffer(); noise.loop = true;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 220;
+            this.ambience = this.ctx.createGain(); this.ambience.gain.value = 0;
+            noise.connect(filter); filter.connect(this.ambience); this.ambience.connect(this.masterGain);
+            noise.start();
+        }
+        this.ambience.gain.setTargetAtTime(active ? 0.055 : 0, this.ctx.currentTime, 0.4);
+    }
+
+    playFootstep(strength = 0.65) {
         if (this.isMuted) return;
         this.init();
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime;
+        const source = this.ctx.createBufferSource();
+        source.buffer = this.noiseBuffer();
+        source.playbackRate.value = 0.8 + Math.random() * 0.35;
         const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass'; filter.frequency.value = 500 + strength * 500;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.14 * strength, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        const pan = this.ctx.createStereoPanner();
+        this.stepSide = -(this.stepSide || 1); pan.pan.value = this.stepSide * 0.18;
+        source.connect(filter); filter.connect(gain); gain.connect(pan); pan.connect(this.masterGain);
+        source.start(now, Math.random()); source.stop(now + 0.16);
+        source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); pan.disconnect(); };
+    }
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(80 + Math.random() * 20, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.08);
-
-        filter.type = 'lowpass';
-        filter.frequency.value = 350;
-
-        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.08);
+    playLanding() {
+        this.playFootstep(1.5);
     }
 
     playJump() {
@@ -114,6 +136,27 @@ class SoundEngine {
         burstGain.connect(this.masterGain);
         noise.start(now + 0.22);
         noise.stop(now + 0.6);
+    }
+
+    playCough() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        for (const delay of [0, .18]) {
+            const source = this.ctx.createBufferSource();
+            source.buffer = this.noiseBuffer();
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 650;
+            filter.Q.value = .8;
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(.001, now + delay);
+            gain.gain.linearRampToValueAtTime(.2, now + delay + .015);
+            gain.gain.exponentialRampToValueAtTime(.001, now + delay + .13);
+            source.connect(filter); filter.connect(gain); gain.connect(this.masterGain);
+            source.start(now + delay, .3); source.stop(now + delay + .15);
+            source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+        }
     }
 
     playLaugh() {
@@ -292,6 +335,8 @@ class SoundEngine {
     playAlert() {
         if (this.isMuted) return;
         this.init();
+        if (this.ctx.currentTime - (this.lastAlert ?? -Infinity) < 0.75) return;
+        this.lastAlert = this.ctx.currentTime;
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -327,7 +372,9 @@ class SoundEngine {
         lfo.frequency.value = 0.8; // 0.8 Hz wail cycle
         lfoGain.gain.value = 250;  // 650 +/- 250 Hz
 
-        lfo.connect(this.sirenOsc.frequency);
+        lfo.connect(lfoGain);
+        lfoGain.connect(this.sirenOsc.frequency);
+        this._lfoGain = lfoGain;
         this.sirenOsc.connect(this.sirenGain);
         this.sirenGain.connect(this.masterGain);
 
@@ -342,6 +389,10 @@ class SoundEngine {
                 this.sirenOsc.stop();
                 this._lfo.stop();
             } catch (e) {}
+            this.sirenOsc.disconnect();
+            this.sirenGain.disconnect();
+            this._lfo.disconnect();
+            this._lfoGain.disconnect();
             this.sirenOsc = null;
             this._lfo = null;
         }

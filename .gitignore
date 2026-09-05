@@ -4,5 +4,6 @@ dist
 *.log
 .env
 .env.local
+*.blend1
 ._*
 .DS_Store

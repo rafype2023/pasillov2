@@ -41,15 +41,15 @@ export class LoungeRaceLevel {
         this.player.stamina = 100;
 
         // 2. Spawn Racer NPCs side-by-side with balanced competitive speeds
-        this.fernan = new FernanNPC(this.scene, new THREE.Vector3(-18, 0, 12), this.particles);
+        this.fernan = new FernanNPC(this.scene, new THREE.Vector3(-20, 0, 10), this.particles);
         this.fernan.speed = 3.8;
         this.npcs.push(this.fernan);
 
-        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-18, 0, 8), this.particles);
+        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-16, 0, 10), this.particles);
         this.alejandro.speed = 4.2;
         this.npcs.push(this.alejandro);
 
-        this.hector = new HectorNPC(this.scene, new THREE.Vector3(-18, 0, 6));
+        this.hector = new HectorNPC(this.scene, new THREE.Vector3(-18, 0, 12));
         this.hector.speed = 4.6;
         this.npcs.push(this.hector);
 
@@ -125,10 +125,10 @@ export class LoungeRaceLevel {
                 this.raceStarted = true;
                 sounds.playBoost();
                 // Direct NPCs toward the lounge buffet
-                this.fernan.setDestination(this.finishTarget);
+                this.fernan.setRoute(this.floorPlan.navigation.route(this.fernan.position, this.finishTarget));
                 this.fernan.fallCooldown = 2.0; // Trips 2 seconds into the sprint!
-                this.alejandro.setDestination(this.finishTarget);
-                this.hector.setDestination(this.finishTarget);
+                this.alejandro.setRoute(this.floorPlan.navigation.route(this.alejandro.position, this.finishTarget));
+                this.hector.setRoute(this.floorPlan.navigation.route(this.hector.position, this.finishTarget));
             }
             return;
         }

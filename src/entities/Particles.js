@@ -33,6 +33,7 @@ export class ParticleSystem {
             color: 0x44ee33,
             transparent: true,
             opacity: 0.85,
+            depthWrite: false,
             map: this.glowTex
         });
 
@@ -63,6 +64,7 @@ export class ParticleSystem {
             });
         }
 
+        pMat.dispose();
         this.scene.add(group);
         this.emitters.push({
             group,
@@ -164,7 +166,6 @@ export class ParticleSystem {
 
     createConfetti(position) {
         const colors = [0xff2222, 0x22ff22, 0x2266ff, 0xffdd22, 0xff22dd];
-        const group = new THREE.Group();
 
         for (let i = 0; i < 60; i++) {
             const col = colors[Math.floor(Math.random() * colors.length)];
@@ -176,7 +177,7 @@ export class ParticleSystem {
                 (Math.random() - 0.5) * 2
             ));
 
-            group.add(p);
+            this.scene.add(p);
             this.activeParticles.push({
                 mesh: p,
                 velocity: new THREE.Vector3(
@@ -189,7 +190,6 @@ export class ParticleSystem {
                 decay: 0.3
             });
         }
-        this.scene.add(group);
     }
 
     update(delta, camera) {
@@ -200,7 +200,7 @@ export class ParticleSystem {
 
             em.particles.forEach(p => {
                 p.mesh.position.addScaledVector(p.velocity, delta);
-                p.velocity.multiplyScalar(0.92); // Drag
+                p.velocity.multiplyScalar(Math.exp(-5 * delta)); // Drag
                 p.life -= delta * p.decay;
                 p.mesh.material.opacity = Math.max(0, p.life * 0.8);
                 p.mesh.scale.setScalar(1.0 + (1.0 - p.life) * 1.8); // Cloud expands
@@ -208,6 +208,7 @@ export class ParticleSystem {
             });
 
             if (em.age > em.maxAge) {
+                em.particles.forEach(p => this.disposeParticle(p.mesh));
                 this.scene.remove(em.group);
                 this.emitters.splice(i, 1);
             }
@@ -229,16 +230,23 @@ export class ParticleSystem {
             }
 
             if (p.life <= 0) {
-                this.scene.remove(p.mesh);
+                this.disposeParticle(p.mesh);
                 this.activeParticles.splice(i, 1);
             }
         }
     }
 
+    disposeParticle(mesh) {
+        mesh.removeFromParent();
+        mesh.geometry.dispose();
+        if (mesh.material.map && mesh.material.map !== this.glowTex) mesh.material.map.dispose();
+        mesh.material.dispose();
+    }
+
     clear() {
-        this.emitters.forEach(em => this.scene.remove(em.group));
+        this.emitters.forEach(em => { em.particles.forEach(p => this.disposeParticle(p.mesh)); this.scene.remove(em.group); });
         this.emitters = [];
-        this.activeParticles.forEach(p => this.scene.remove(p.mesh));
+        this.activeParticles.forEach(p => this.disposeParticle(p.mesh));
         this.activeParticles = [];
     }
 }

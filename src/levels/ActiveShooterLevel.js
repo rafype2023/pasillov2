@@ -62,7 +62,7 @@ export class ActiveShooterLevel {
         this.fernan.rescued = false;
         this.npcs.push(this.fernan);
 
-        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-28, 0, -8), this.particles);
+        this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-25, 0, -8), this.particles);
         this.alejandro.rescued = false;
         this.npcs.push(this.alejandro);
 

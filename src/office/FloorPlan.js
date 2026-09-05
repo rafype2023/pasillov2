@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { officeMaterials } from './Materials.js';
 import { officeProps } from './Props.js';
+import { Navigation } from './Navigation.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /**
  * FloorPlan: Photorealistic 3D Office Environment ("THE SPINE")
@@ -25,6 +27,7 @@ export class FloorPlan {
         this.lights = [];
 
         this.buildOffice();
+        this.navigation = new Navigation(this.colliders);
     }
 
     setEmergencyLighting(enabled) {
@@ -49,6 +52,7 @@ export class FloorPlan {
 
         // 4. West Wing (Left): Additional Cubicle Banks & Manager Pods
         this.createWestWing();
+        this.createReferenceDetails();
 
         // 5. East Wing (Right): Glass Command Center / Boardroom with Server Video Wall
         this.createEastCommandCenter();
@@ -59,6 +63,7 @@ export class FloorPlan {
         // 7. Ceiling Light Troffers (Overhead Corporate Illumination)
         this.createCeilingLights();
 
+        this.batchStaticMeshes();
         this.scene.add(this.group);
     }
 
@@ -75,6 +80,7 @@ export class FloorPlan {
         const ceilMesh = new THREE.Mesh(ceilGeo, this.materials.get('ceiling'));
         ceilMesh.rotation.x = Math.PI / 2;
         ceilMesh.position.y = 3.6;
+        this.ceiling = ceilMesh;
         this.group.add(ceilMesh);
     }
 
@@ -225,6 +231,7 @@ export class FloorPlan {
         endWallR.position.set(1.41, partitionH / 2, endZ);
         spineGroup.add(endWallR);
 
+        this.spineGroup = spineGroup;
         this.group.add(spineGroup);
     }
 
@@ -352,9 +359,105 @@ export class FloorPlan {
                 group.add(frame);
 
                 group.position.set(x, 0, z);
+                this.lights.push(group);
                 this.group.add(group);
             });
         });
+    }
+
+    // Additional banks and perimeter meeting spaces inspired by the supplied plan.
+    createReferenceDetails() {
+        const prototype = this.spineGroup;
+        if (prototype) {
+            // Reuse geometries/materials; translated collision boxes follow the same bank.
+            for (const x of [-19, 24]) {
+                const bank = prototype.clone(true);
+                bank.scale.x = 0.72;
+                bank.position.x = x;
+                this.group.add(bank);
+                bank.updateMatrixWorld(true);
+                bank.traverse(mesh => {
+                    if (mesh.isMesh && mesh.geometry.type === 'BoxGeometry' && mesh.position.y < 0.85) {
+                        this.colliders.push(new THREE.Box3().setFromObject(mesh));
+                    }
+                });
+            }
+        }
+        // Meeting rooms along the back edge with open entrances to the cross corridor.
+        for (const x of [-19, -8]) {
+            this.addWall(x, 1.5, -11, 7, 3, 0.12, this.materials.get('glass'));
+            this.addWall(x - 3.5, 1.5, -14.5, 0.15, 3, 7, this.materials.get('wall'));
+            const table = this.props.createRoundMeetingTable(1.15, 4);
+            table.position.set(x, 0, -14.3);
+            this.group.add(table);
+            this.colliders.push(new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, 0.5, -14.3), new THREE.Vector3(2.3, 1, 2.3)));
+            this.createSign('SALA ' + (x === -19 ? '01' : '02'), x, 2.5, -10.9);
+        }
+        for (const x of [-14, -5, 7, 22]) {
+            for (const z of [-9, 10]) {
+                this.addWall(x, 1.8, z, 0.5, 3.6, 0.5, this.materials.get('wall'));
+            }
+        }
+        this.createSign('PISO 3  /  OPERACIONES', 0, 2.7, -17.8);
+        this.createSign('LOUNGE', 16, 2.5, 6.2);
+        this.createSign('ALA OESTE', -16, 2.4, -8.8);
+        // Low cabinets and warm task lights seen in the reference photographs.
+        for (const z of [-5.1, -1.7, 1.7, 5.1]) {
+            this.addWall(-0.58, 1.22, z - 1.1, 0.95, 0.36, 0.34, this.materials.get('spineCap'));
+        }
+    }
+
+    createSign(text, x, y, z) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 768; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#123c3c'; ctx.fillRect(0, 0, 768, 128);
+        ctx.fillStyle = '#bbdfb0'; ctx.fillRect(0, 0, 10, 128);
+        ctx.fillStyle = '#ffffff'; ctx.font = '500 42px sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText(text, 384, 79);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.57), new THREE.MeshBasicMaterial({map: tex, side: THREE.DoubleSide}));
+        sign.position.set(x, y, z); this.group.add(sign);
+    }
+
+    batchStaticMeshes() {
+        this.group.updateMatrixWorld(true);
+        const batches = new Map();
+        this.group.traverse(mesh => {
+            if (!mesh.isMesh || Array.isArray(mesh.material) || mesh === this.ceiling) return;
+            let parent = mesh.parent;
+            while (parent && parent !== this.group) {
+                if (this.lights.includes(parent)) return;
+                parent = parent.parent;
+            }
+            const key = mesh.material.uuid;
+            if (!batches.has(key)) batches.set(key, []);
+            batches.get(key).push(mesh);
+        });
+        for (const meshes of batches.values()) {
+            if (meshes.length < 2) continue;
+            const geometries = meshes.map(mesh => {
+                let geo = mesh.geometry.clone();
+                if (geo.index) { const indexed = geo; geo = geo.toNonIndexed(); indexed.dispose(); }
+                geo.applyMatrix4(mesh.matrixWorld);
+                return geo;
+            });
+            const geometry = mergeGeometries(geometries);
+            geometries.forEach(geo => geo.dispose());
+            if (!geometry) continue;
+            const batch = new THREE.Mesh(geometry, meshes[0].material);
+            batch.castShadow = meshes.some(mesh => mesh.castShadow);
+            batch.receiveShadow = true;
+            meshes.forEach(mesh => mesh.removeFromParent());
+            this.group.add(batch);
+        }
+    }
+
+    updateView(camera) {
+        const interior = camera.position.y < 3.45;
+        this.ceiling.visible = interior;
+        this.lights.forEach(light => { light.visible = interior; });
     }
 
     addWall(x, y, z, w, h, d, material) {

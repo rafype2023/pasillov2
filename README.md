@@ -60,13 +60,13 @@ Inspired by Matt Wolfe's 3D roguelite development style, featuring **Guillo** as
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/rafype2023/PASILLOGAMES.git
-   cd PASILLOGAMES
+   git clone https://github.com/rafype2023/pasillov2.git
+   cd pasillov2
    ```
 
 2. **Install dependencies**:
    ```bash
-   npm install
+   npm ci
    ```
 
 3. **Start the development server**:

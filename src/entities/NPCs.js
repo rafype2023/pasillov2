@@ -71,12 +71,21 @@ export class BaseNPC {
         this.mesh.position.copy(this.position);
     }
 
+    setRoute(points) {
+        this.route = points.map(p => p.clone());
+        this.targetPos = this.route.shift() || null;
+    }
+
     setDestination(target) {
+        this.route = null;
         this.targetPos = target.clone();
     }
 
     update(delta, camera) {
         this.animTime += delta;
+        if (this.route?.length && this.targetPos && this.position.distanceTo(this.targetPos) < 0.1) {
+            this.targetPos = this.route.shift();
+        }
         if (this.nameTag && camera) {
             this.nameTag.lookAt(camera.position);
         }
@@ -108,13 +117,20 @@ export class FernanNPC extends BaseNPC {
             this.fallTimer -= delta;
 
             const kick = Math.sin(Date.now() * 0.025) * 0.6;
+            if (this.modelParts.detailed) {
+                HumanoidBuilder.applyPose(this.modelParts, 'jump', this.animTime, 0);
+            } else {
             this.leftLeg.rotation.x = kick;
             this.rightLeg.rotation.x = -kick;
             this.leftArm.rotation.z = Math.PI / 2.5;
             this.rightArm.rotation.z = -Math.PI / 2.5;
+            }
 
             this.mesh.position.set(this.position.x, 0.22, this.position.z);
-            this.mesh.rotation.x = -Math.PI / 2;
+            const fallProgress = Math.min(1, (2 - this.fallTimer) / 0.22);
+            const recovery = Math.min(1, this.fallTimer / 0.45);
+            const weight = Math.max(0, Math.min(fallProgress, recovery));
+            this.mesh.rotation.x = -Math.PI / 2 * weight * weight * (3 - 2 * weight);
 
             if (this.fallTimer <= 0) {
                 this.isDown = false;
@@ -130,8 +146,12 @@ export class FernanNPC extends BaseNPC {
             this.stumbleTimer -= delta;
 
             this.mesh.rotation.z = Math.sin(Date.now() * 0.035) * 0.45;
+            if (this.modelParts.detailed) {
+                HumanoidBuilder.applyPose(this.modelParts, 'run', this.animTime, this.speed);
+            } else {
             this.leftArm.rotation.x = Math.sin(Date.now() * 0.04) * 1.5;
             this.rightArm.rotation.x = -Math.sin(Date.now() * 0.04) * 1.5;
+            }
 
             if (this.stumbleTimer <= 0) {
                 this.isStumbling = false;
@@ -154,9 +174,9 @@ export class FernanNPC extends BaseNPC {
             const dir = this.targetPos.clone().sub(this.position);
             dir.y = 0;
             const dist = dir.length();
-            if (dist > 0.5) {
+            if (dist > 0.08) {
                 dir.normalize();
-                this.position.addScaledVector(dir, this.speed * delta);
+                this.position.addScaledVector(dir, Math.min(dist, this.speed * delta));
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
@@ -174,7 +194,7 @@ export class FernanNPC extends BaseNPC {
         this.fallTimer = 2.0;
         sounds.playFernanFall();
 
-        this.mesh.rotation.x = -Math.PI / 2;
+        this.mesh.rotation.x = 0;
         this.mesh.position.set(this.position.x, 0.22, this.position.z);
 
         if (this.particles) {
@@ -210,10 +230,10 @@ export class AlejandroNPC extends BaseNPC {
             const dir = this.targetPos.clone().sub(this.position);
             dir.y = 0;
             const dist = dir.length();
-            if (dist > 0.5) {
+            if (dist > 0.08) {
                 isRunning = true;
                 dir.normalize();
-                this.position.addScaledVector(dir, this.speed * delta);
+                this.position.addScaledVector(dir, Math.min(dist, this.speed * delta));
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
             }
@@ -221,10 +241,16 @@ export class AlejandroNPC extends BaseNPC {
 
         if (this.laughingTimer > 0) {
             this.laughingTimer -= delta;
+            if (this.modelParts.detailed) {
+                HumanoidBuilder.applyPose(this.modelParts, isRunning ? 'run' : 'idle', this.animTime, this.speed);
+                this.torso.rotateX(Math.sin(this.animTime * 18) * .07);
+                this.head.rotateX(Math.sin(this.animTime * 18) * .06);
+            } else {
             this.torso.rotation.x = Math.sin(Date.now() * 0.025) * 0.35;
             this.head.rotation.x = Math.sin(Date.now() * 0.025) * 0.35;
             this.leftArm.rotation.x = Math.sin(Date.now() * 0.025) * 0.5;
             this.rightArm.rotation.x = Math.sin(Date.now() * 0.025) * 0.5;
+            }
         } else {
             HumanoidBuilder.applyPose(this.modelParts, isRunning ? 'run' : 'idle', this.animTime, this.speed);
         }
@@ -245,9 +271,9 @@ export class HectorNPC extends BaseNPC {
             const dir = this.targetPos.clone().sub(this.position);
             dir.y = 0;
             const dist = dir.length();
-            if (dist > 0.5) {
+            if (dist > 0.08) {
                 dir.normalize();
-                this.position.addScaledVector(dir, this.speed * delta);
+                this.position.addScaledVector(dir, Math.min(dist, this.speed * delta));
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
@@ -300,7 +326,7 @@ export class SneezerNPC extends BaseNPC {
 
             if (dist > 1.2) {
                 dir.normalize();
-                this.position.addScaledVector(dir, this.speed * delta);
+                this.position.addScaledVector(dir, Math.min(dist, this.speed * delta));
                 this.mesh.position.copy(this.position);
                 this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
 
@@ -330,7 +356,7 @@ export class SneezerNPC extends BaseNPC {
         const sneezePos = this.position.clone().add(fwd.clone().multiplyScalar(0.6)).add(new THREE.Vector3(0, 1.45, 0));
 
         if (this.particles) {
-            this.particles.createSneezeCloud(sneezePos, fwd);
+            this.particles.createSneezeBurst(sneezePos, fwd);
         }
 
         if (player && !player.isDead) {

@@ -957,3 +957,35 @@ body, html {
         opacity: 0.85;
     }
 }
+
+/* Quiet, readable overlays keep the office in focus. */
+.hud-golden-badge { border: 1px solid #85b8a6; box-shadow: none; background: #132d30ed; padding: .4rem 1rem; }
+.hud-golden-badge span { color: #c9eddb; text-shadow: none; font-size: 1rem; letter-spacing: .12em; }
+.hud-player-card, .hud-center-pill, .hud-mission-toast, .hud-bottom-bar, .spine-minimap-card { background: #10282de8; border: 1px solid #9cc9ba35; box-shadow: 0 6px 24px #0002; backdrop-filter: blur(12px); }
+.hud-player-card { width: 220px; top: 4.7rem; }
+.hud-center-pill { min-width: 230px; }
+.hud-btn { background: #10282de8; border-color: #9cc9ba35; }
+.hud-btn:hover { background: #254b4f; }
+.spine-level-title { font-size: .7rem; letter-spacing: .16em; }
+.hud-mission-toast { bottom: 4.8rem; max-width: 580px; }
+.hud-bottom-bar { font-size: .68rem; max-width: 670px; }
+@media (hover: hover) and (pointer: fine) { .touch-controls-container { display: none; } }
+@media (max-width: 800px) {
+  .hud-player-card { width: 170px; padding: .65rem; }
+  .hud-center-pill { top: 5rem; left: auto; right: 1rem; transform: none; min-width: 150px; max-width: 190px; }
+  .hud-mission-toast { bottom: 10rem; max-width: 90vw; }
+  .hud-bottom-bar { display: none; }
+  .spine-bottom-right-container { bottom: 9rem; }
+}
+.character-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    background: #10242b;
+    color: #e7f5f5;
+    font: 500 18px/1.5 system-ui, sans-serif;
+    text-align: center;
+}
