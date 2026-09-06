@@ -1,5 +1,10 @@
 # Personajes de oficina
 
+`alejandro.glb` es una variante estilizada, delgada y de piel clara latina,
+con gafas grandes, nariz redondeada y cabello azul oscuro. Conserva las cinco
+animaciones. Su fuente editable está en `art-source/alejandro.blend` y se
+reconstruye con `tools/build_alejandro.py`.
+
 Guillo usa `guillo-face.png`, un retrato frontal interpretado a partir de la
 captura proporcionada por el usuario, aplicado a la cabeza de `guillo.glb`.
 `tools/build_guillo_face.py` actualiza su modelo editable y conserva el cuerpo

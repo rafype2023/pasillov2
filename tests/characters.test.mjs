@@ -13,7 +13,7 @@ GLTFLoader.prototype.loadAsync = async function(url) {
     const length = bytes.readUInt32LE(12);
     const json = JSON.parse(bytes.subarray(20, 20 + length));
     assert.equal(json.skins.length, 1);
-    assert.ok(json.images.length >= (url.includes('fernan') ? 3 : 5), 'skin, clothing, hair and shoes have textures');
+    assert.ok(json.images.length >= (url.includes('fernan') || url.includes('alejandro') ? 3 : 5), 'skin, clothing, hair and shoes have textures');
     assert.ok(json.images.every(image => Number.isInteger(image.bufferView)), 'textures are embedded');
     assert.deepEqual(json.animations.map(a => a.name).sort(), ['Crouch', 'Idle', 'Jump', 'Run', 'Walk']);
     const binary = bytes.subarray(28 + length);
@@ -36,9 +36,10 @@ const first = createDetailedHuman({faceTexturePath:'guillo'});
 const second = createDetailedHuman({faceTexturePath:'guillo'});
 const colleague = createDetailedHuman({});
 const fernan = createDetailedHuman({faceTexturePath: 'fernan'});
+const alejandro = createDetailedHuman({faceTexturePath: 'alejandro'});
 assert.notEqual(first.leftLeg, second.leftLeg, 'clones own their skeleton');
 const resting = second.leftLeg.quaternion.clone();
-for (const model of [first, colleague, fernan]) {
+for (const model of [first, colleague, fernan, alejandro]) {
     let time = 0;
     for (const [state, speed, action] of [['run',4,'Walk'],['run',7,'Run'],['crouch',0,'Crouch'],['jump',0,'Jump'],['idle',0,'Idle']]) {
         for (let frame=0; frame<45; frame++) model.update(state, time+=1/60, speed);
@@ -47,7 +48,10 @@ for (const model of [first, colleague, fernan]) {
         model.group.traverse(object => assert.ok(object.matrixWorld.elements.every(Number.isFinite)));
     }
     const size = new THREE.Box3().setFromObject(model.group, true).getSize(new THREE.Vector3());
-    assert.ok(size.y > (model === fernan ? 1.1 : 1.5) && size.y < (model === fernan ? 1.6 : 2.1), `human scale is plausible: ${size.y}`);
+    const minHeight = model === fernan ? 1.1 : model === alejandro ? 1.45 : 1.5;
+    const maxHeight = model === fernan ? 1.6 : model === alejandro ? 1.75 : 2.1;
+    assert.ok(size.y > minHeight && size.y < maxHeight, `human scale is plausible: ${size.y}`);
 }
 assert.ok(second.leftLeg.quaternion.equals(resting), 'animating one actor leaves another unchanged');
-console.log('PASS: all three GLBs, embedded textures, full skeletons, five clips, animation transitions, independent actors and human scale.');
+assert.notEqual(alejandro.body, colleague.body, 'Alejandro uses his dedicated model');
+console.log('PASS: all four GLBs, embedded textures, full skeletons, five clips, animation transitions, independent actors and human scale.');

@@ -5,17 +5,18 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 const library = new Map();
 export async function loadHumanModels(onProgress = () => {}) {
     const loader = new GLTFLoader();
-    for (const name of ['guillo', 'colleague', 'fernan']) {
+    for (const name of ['guillo', 'colleague', 'fernan', 'alejandro']) {
         const asset = await loader.loadAsync(`/models/${name}.glb`);
         library.set(name, asset);
-        onProgress(library.size / 3);
+        onProgress(library.size / 4);
     }
 }
 
 export function createDetailedHuman(options = {}) {
     const isGuillo = options.faceTexturePath?.includes('guillo');
     const isFernan = options.faceTexturePath?.includes('fernan');
-    const asset = library.get(isFernan ? 'fernan' : isGuillo ? 'guillo' : 'colleague');
+    const isAlejandro = options.faceTexturePath?.includes('alejandro');
+    const asset = library.get(isAlejandro ? 'alejandro' : isFernan ? 'fernan' : isGuillo ? 'guillo' : 'colleague');
     if (!asset) return null;
     const group = new THREE.Group();
     const body = clone(asset.scene);
