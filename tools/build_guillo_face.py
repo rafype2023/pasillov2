@@ -19,6 +19,39 @@ if not skin.get('guillo_reference_shape'):
     skin['guillo_reference_shape']=True
 
 photo=bpy.data.images.load(str(ROOT/'public/models/guillo-face.png'))
+# Match the body albedo to the portrait using skin-only samples. This retains
+# the original pores and shading variation, and exports as a standard GLB map.
+import numpy as np
+bodymat=skin.data.materials[0]
+bodytex=next(n for n in bodymat.node_tree.nodes if n.type=='TEX_IMAGE' and n.image)
+if not bodymat.get('portrait_tone_matched'):
+    source=bodytex.image
+    w,h=source.size
+    pixels=np.array(source.pixels[:],dtype=np.float32).reshape(h,w,4)
+    fw,fh=photo.size
+    portrait=np.array(photo.pixels[:],dtype=np.float32).reshape(fh,fw,4)
+    # Forehead avoids hair, eyebrows, lips, and the baked smile shadows.
+    target=np.median(portrait[int(fh*.62):int(fh*.72),int(fw*.38):int(fw*.62),:3],axis=(0,1))
+    baseuv=skin.data.uv_layers[0]
+    samples=[]
+    for poly in skin.data.polygons:
+        if poly.material_index==0 and 1.40<poly.center.z<1.48 and poly.center.y<0:
+            for li in poly.loop_indices:
+                u,v=baseuv.data[li].uv
+                samples.append(pixels[min(h-1,int(v*h)),min(w-1,int(u*w)),:3])
+    baseline=np.median(samples,axis=0)
+    factors=target/np.maximum(baseline,.005)
+    pixels[:,:,:3]=np.clip(pixels[:,:,:3]*factors,0,1)
+    matched=bpy.data.images.new('Guillo matched body albedo',width=w,height=h,alpha=True)
+    matched.pixels.foreach_set(pixels.ravel())
+    matched.pack()
+    bodytex.image=matched
+    bodymat['portrait_tone_matched']=True
+    print('Skin match',target.tolist(),baseline.tolist(),factors.tolist(),flush=True)
+body_bsdf=bodymat.node_tree.nodes.get('Principled BSDF')
+body_bsdf.inputs['Roughness'].default_value=.72
+body_bsdf.inputs['Subsurface Weight'].default_value=0
+
 old=skin.data.uv_layers.get('GuilloFront')
 if old:skin.data.uv_layers.remove(old)
 face=bpy.data.materials.new('Guillo reference face');face.use_nodes=True
