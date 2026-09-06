@@ -1,5 +1,11 @@
 # Personajes de oficina
 
+`fernan.glb` es la variante baja y robusta de Fernan, con un rostro preparado
+a partir de la fotografía proporcionada por el usuario. La textura frontal
+`fernan-face.png` es una interpretación de esa referencia, no un escaneo 3D.
+Conserva las cinco animaciones del personaje base. Su fuente editable está en
+`art-source/fernan.blend` y se reconstruye con `tools/build_fernan.py`.
+
 `guillo.glb` y `colleague.glb` contienen geometría humana, esqueleto, texturas
 integradas y las animaciones Idle, Walk, Run, Crouch y Jump. Son personajes
 genéricos; no son escaneos ni reproducciones fieles de los compañeros.

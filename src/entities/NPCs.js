@@ -65,7 +65,7 @@ export class BaseNPC {
         const nameTex = new THREE.CanvasTexture(canvas);
         const nameMat = new THREE.MeshBasicMaterial({ map: nameTex, side: THREE.DoubleSide, transparent: true });
         this.nameTag = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.25), nameMat);
-        this.nameTag.position.y = 2.1;
+        this.nameTag.position.y = faceTexturePath?.includes('fernan') ? 1.55 : 2.1;
         this.mesh.add(this.nameTag);
 
         this.mesh.position.copy(this.position);
