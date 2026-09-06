@@ -81,7 +81,7 @@ export class Player {
                 pantsColor: 0x1e232a, // Charcoal dark slacks
                 shoesColor: 0x111317, // Black dress shoes
                 hairColor: 0xb5ada5,  // Styled wavy grey/blonde hair
-                faceTexturePath: '/assets/guillo_face.png',
+                faceTexturePath: '/models/guillo-face.png',
                 hasBadge: true
             });
         }

@@ -1,5 +1,10 @@
 # Personajes de oficina
 
+Guillo usa `guillo-face.png`, un retrato frontal interpretado a partir de la
+captura proporcionada por el usuario, aplicado a la cabeza de `guillo.glb`.
+`tools/build_guillo_face.py` actualiza su modelo editable y conserva el cuerpo
+y las cinco animaciones.
+
 `fernan.glb` es la variante baja y robusta de Fernan, con un rostro preparado
 a partir de la fotografía proporcionada por el usuario. La textura frontal
 `fernan-face.png` es una interpretación de esa referencia, no un escaneo 3D.
