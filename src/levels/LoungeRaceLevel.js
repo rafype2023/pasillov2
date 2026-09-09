@@ -36,7 +36,7 @@ export class LoungeRaceLevel {
 
         // 1. Spawn player at Start line in West wing
         const startLine = new THREE.Vector3(-18, 0, 10);
-        this.finishTarget = new THREE.Vector3(16, 0, -2);
+        this.finishTarget = this.floorPlan.loungePoint.clone();
         this.player.spawn(startLine);
         this.player.stamina = 100;
 

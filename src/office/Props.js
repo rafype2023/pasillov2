@@ -18,20 +18,18 @@ export class OfficeProps {
         const deskHeight = 0.74;
         const isLeft = (side === 'left');
 
-        // 1. Curved / Ergonomic L-Shaped Maple Desktop
-        const mainDeskGeo = new THREE.BoxGeometry(deskWidth, 0.04, deskDepth);
-        const mainDesk = new THREE.Mesh(mainDeskGeo, this.materials.get('deskTop'));
-        mainDesk.position.set(0, deskHeight, 0);
-        mainDesk.castShadow = true;
-        mainDesk.receiveShadow = true;
-        group.add(mainDesk);
-
-        // Curved Front Edge Contour
-        const edgeCurveGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.04, 16, 1, false, 0, Math.PI);
-        const edgeCurve = new THREE.Mesh(edgeCurveGeo, this.materials.get('deskTop'));
-        edgeCurve.rotation.y = isLeft ? -Math.PI / 2 : Math.PI / 2;
-        edgeCurve.position.set(isLeft ? 0.35 : -0.35, deskHeight, 0.78);
-        group.add(edgeCurve);
+        // Pale laminate L desk with an open knee/chair recess, as in cub2/cub3.
+        const outline = new THREE.Shape();
+        outline.moveTo(-1.2, -.8); outline.lineTo(1.2, -.8);
+        outline.lineTo(1.2, 1.65); outline.lineTo(.56, 1.65);
+        outline.lineTo(.56, .62); outline.quadraticCurveTo(.56, .35, .26, .35);
+        outline.lineTo(-1.2, .35); outline.closePath();
+        const deskGeometry = new THREE.ExtrudeGeometry(outline, {depth:.04, bevelEnabled:false, curveSegments:12});
+        deskGeometry.rotateX(Math.PI/2);
+        if (isLeft) deskGeometry.scale(-1,1,1);
+        const mainDesk = new THREE.Mesh(deskGeometry, this.materials.get('deskTop'));
+        mainDesk.position.y = deskHeight+.04;
+        mainDesk.castShadow = true; mainDesk.receiveShadow = true; group.add(mainDesk);
 
         // Modesty Panel & Legs (Black metal)
         const modestyGeo = new THREE.BoxGeometry(deskWidth - 0.2, 0.45, 0.02);

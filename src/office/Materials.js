@@ -150,12 +150,23 @@ class OfficeMaterials {
         this.materials.carpet = new THREE.MeshStandardMaterial({
             map: carpetTex,
             roughness: 0.82,
-            metalness: 0.08,
-            color: 0x9ca3af // Rich heather-grey tone from real office photos
+            metalness: 0.0,
+            color: 0xc2c0ba // Rich heather-grey tone from real office photos
         });
 
         // 2. Photographic Acoustic Cubicle Fabric (/assets/cubicle_fabric.jpg)
-        const fabricTex = this.loader.load('/assets/cubicle_fabric.jpg');
+        // Fine neutral weave avoids repeating photographed cables and shadows.
+        const fabricCanvas = document.createElement('canvas');
+        fabricCanvas.width = fabricCanvas.height = 128;
+        const fabricContext = fabricCanvas.getContext('2d');
+        fabricContext.fillStyle = '#c4beb0'; fabricContext.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 128; i += 2) {
+            fabricContext.fillStyle = i % 4 ? '#bdb7aa' : '#cbc5b8';
+            fabricContext.fillRect(i, 0, 1, 128);
+            fabricContext.fillStyle = 'rgba(90,85,75,.10)';
+            fabricContext.fillRect(0, i, 128, 1);
+        }
+        const fabricTex = new THREE.CanvasTexture(fabricCanvas);
         fabricTex.wrapS = THREE.RepeatWrapping;
         fabricTex.wrapT = THREE.RepeatWrapping;
         fabricTex.repeat.set(3, 2);
@@ -178,7 +189,7 @@ class OfficeMaterials {
 
         // Central Cable Spine Cap
         this.materials.spineCap = new THREE.MeshStandardMaterial({
-            color: 0x8a929b,
+            color: 0xa6a39b,
             roughness: 0.45,
             metalness: 0.45
         });
@@ -291,10 +302,13 @@ class OfficeMaterials {
 
         // Filing Cabinet / Metal Pedestal
         this.materials.filingCabinet = new THREE.MeshStandardMaterial({
-            color: 0x8e97a3,
+            color: 0xa6a39b,
             roughness: 0.38,
             metalness: 0.55
         });
+
+        this.materials.loungeFabric = new THREE.MeshStandardMaterial({color: 0x596345, roughness: .96});
+        this.materials.trashBin = new THREE.MeshStandardMaterial({color: 0x171917, roughness: .85});
 
         // Potted Plant Ceramic & Leaves
         this.materials.plantPot = new THREE.MeshStandardMaterial({

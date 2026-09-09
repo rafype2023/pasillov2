@@ -17,7 +17,7 @@ export class CovidLevel {
 
         // Potential Safe Zone locations across Floor 3
         this.safeLocations = [
-            { name: 'Lounge / Breakroom', pos: new THREE.Vector3(18, 0, -4) },
+            { name: 'Lounge / Breakroom', pos: this.floorPlan.loungePoint.clone() },
             { name: 'Oficina Ejecutiva Norte', pos: new THREE.Vector3(-24, 0, -16) },
             { name: 'Pasillo Ala Oeste', pos: new THREE.Vector3(-22, 0, 12) },
             { name: 'Hub Sur de Cubículos', pos: new THREE.Vector3(18, 0, 14) },
@@ -27,7 +27,7 @@ export class CovidLevel {
         ];
 
         this.currentLocationIndex = 0;
-        this.safeStationPos = new THREE.Vector3(18, 0, -4);
+        this.safeStationPos = this.floorPlan.loungePoint.clone();
         this.safeRelocateTimer = 45.0; // Changes every 45 seconds!
         this.maxRelocateTime = 45.0;
     }
