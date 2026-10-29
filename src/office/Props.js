@@ -7,9 +7,9 @@ export class OfficeProps {
     }
 
     /**
-     * Builds the high-fidelity Central Spine Cubicle Pod (matching the reference render)
-     * Features: L-shaped curved maple desks, central cable spine, whiteboards, dual monitors,
-     * potted succulents, picture frames, phones, water bottles, ergonomic mesh chairs, and 3-drawer pedestals.
+     * Builds the high-fidelity Central Spine Cubicle Pod (matching cub2/cub3 & reference render)
+     * Pale laminate L desk with open knee/chair recess, dual monitors, potted plant, photo frame,
+     * Avaya phone, water bottle, ergonomic mesh chair, and 3-drawer pedestal.
      */
     createSpineCubiclePod(side = 'left') {
         const group = new THREE.Group();
@@ -24,11 +24,11 @@ export class OfficeProps {
         outline.lineTo(1.2, 1.65); outline.lineTo(.56, 1.65);
         outline.lineTo(.56, .62); outline.quadraticCurveTo(.56, .35, .26, .35);
         outline.lineTo(-1.2, .35); outline.closePath();
-        const deskGeometry = new THREE.ExtrudeGeometry(outline, {depth:.04, bevelEnabled:false, curveSegments:12});
-        deskGeometry.rotateX(Math.PI/2);
-        if (isLeft) deskGeometry.scale(-1,1,1);
+        const deskGeometry = new THREE.ExtrudeGeometry(outline, { depth: .04, bevelEnabled: false, curveSegments: 12 });
+        deskGeometry.rotateX(Math.PI / 2);
+        if (isLeft) deskGeometry.scale(-1, 1, 1);
         const mainDesk = new THREE.Mesh(deskGeometry, this.materials.get('deskTop'));
-        mainDesk.position.y = deskHeight+.04;
+        mainDesk.position.y = deskHeight + .04;
         mainDesk.castShadow = true; mainDesk.receiveShadow = true; group.add(mainDesk);
 
         // Modesty Panel & Legs (Black metal)
@@ -65,14 +65,12 @@ export class OfficeProps {
 
         // 4. Black Desk Mat & Slim Keyboard
         const padGeo = new THREE.BoxGeometry(0.85, 0.005, 0.42);
-        const padMat = new THREE.MeshStandardMaterial({ color: 0x181a1f, roughness: 0.8 });
-        const pad = new THREE.Mesh(padGeo, padMat);
+        const pad = new THREE.Mesh(padGeo, this.materials.get('monitorPlastic'));
         pad.position.set(0, deskHeight + 0.022, 0.15);
         group.add(pad);
 
         const kbGeo = new THREE.BoxGeometry(0.44, 0.012, 0.14);
-        const kbMat = new THREE.MeshStandardMaterial({ color: 0x2d3139, roughness: 0.4 });
-        const kb = new THREE.Mesh(kbGeo, kbMat);
+        const kb = new THREE.Mesh(kbGeo, this.materials.get('deskLegs'));
         kb.position.set(-0.08, deskHeight + 0.028, 0.15);
         group.add(kb);
 
@@ -117,22 +115,312 @@ export class OfficeProps {
         return group;
     }
 
+    /**
+     * Rafael Perez's Lime-Green FirstBank Bottle + Blue Mainline Tumbler + Newton's Cradle (IMG_2245.png)
+     */
+    createRafaelDeskAccessories() {
+        const group = new THREE.Group();
+        const greenMat = this.materials.get('fbGreen');
+        const darkMat = this.materials.get('deskLegs');
+        const chromeMat = this.materials.get('handrail');
+
+        const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.038, 0.24, 14), greenMat);
+        bottle.position.y = 0.12;
+        group.add(bottle);
+
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.035, 14), darkMat);
+        cap.position.y = 0.255;
+        group.add(cap);
+
+        // Newton's Cradle desk toy (IMG_2245.png)
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.015, 0.10), darkMat);
+        base.position.set(-0.14, 0.008, 0.12);
+        group.add(base);
+
+        [-0.035, 0.035].forEach(z => {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 0.008), chromeMat);
+            bar.position.set(-0.14, 0.06, 0.12 + z);
+            group.add(bar);
+        });
+        for (let i = -2; i <= 2; i++) {
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 8), chromeMat);
+            sphere.position.set(-0.14 + i * 0.022, 0.045, 0.12);
+            group.add(sphere);
+        }
+
+        return group;
+    }
+
+    /**
+     * Authentic Birthday Snack Buffet Peninsula from IMG_2843.png, IMG_4361.png & conf.png!
+     */
+    createSnacksTable() {
+        const group = new THREE.Group();
+        const deskH = 0.76;
+        const woodMat = this.materials.get('deskTop');
+        const trimMat = this.materials.get('cubicleTrim');
+        const spineMat = this.materials.get('spineCap');
+        const darkMat = this.materials.get('monitorPlastic');
+        const greenMat = this.materials.get('fbGreen');
+        const redMat = this.materials.get('stairCarpet');
+
+        // Curved Bullet Peninsula Countertop (IMG_2843.png)
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.045, 1.1), woodMat);
+        counter.position.set(0, deskH, 0);
+        counter.castShadow = true;
+        counter.receiveShadow = true;
+        group.add(counter);
+
+        const roundedEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.045, 16), woodMat);
+        roundedEnd.position.set(-1.3, deskH, 0);
+        group.add(roundedEnd);
+
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, deskH, 12), trimMat);
+        leg.position.set(-1.25, deskH / 2, 0);
+        group.add(leg);
+
+        const ped = this.createFilingPedestal();
+        ped.position.set(1.0, 0, -0.2);
+        group.add(ped);
+
+        // Overhead Gray Storage Cabinet with Birthday Balloons (IMG_2843.png)
+        const bin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.38, 0.36), spineMat);
+        bin.position.set(0.1, 1.48, -0.36);
+        group.add(bin);
+
+        // Round Black "Happy Birthday" Foil Balloon + Silver Foil Balloons on top of bin
+        const blackBalloon = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), darkMat);
+        blackBalloon.scale.set(1.0, 0.9, 0.55);
+        blackBalloon.position.set(0.25, 1.84, -0.32);
+        group.add(blackBalloon);
+
+        [-0.42, -0.12].forEach(bx => {
+            const sb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), this.materials.get('handrail'));
+            sb.scale.set(1.1, 0.85, 0.6);
+            sb.position.set(bx, 1.82, -0.35);
+            group.add(sb);
+        });
+
+        // Bowls & Snack Bags (Doritos, Tostitos, Ritz, Pita Chips, Nacho Platter)
+        const nachoTray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.04, 16), this.materials.get('woodDoor'));
+        nachoTray.position.set(-0.88, deskH + 0.04, 0.16);
+        group.add(nachoTray);
+
+        const blackBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.12, 0.08, 14), darkMat);
+        blackBowl.position.set(-0.38, deskH + 0.06, 0.20);
+        group.add(blackBowl);
+
+        [
+            [-0.75, -0.22, 0.18, 0.24, 0.09, redMat],
+            [-0.45, -0.22, 0.16, 0.22, 0.08, redMat],
+            [0.25, -0.18, 0.16, 0.22, 0.08, greenMat],
+            [0.55, -0.15, 0.18, 0.24, 0.09, redMat],
+            [0.82, -0.12, 0.16, 0.22, 0.08, darkMat]
+        ].forEach(([sx, sz, sw, sh, sd, smat]) => {
+            const bag = new THREE.Mesh(new THREE.BoxGeometry(sw, sh, sd), smat);
+            bag.position.set(sx, deskH + sh / 2 + 0.02, sz);
+            group.add(bag);
+        });
+
+        return group;
+    }
+
+    /**
+     * Builds a row of FirstBank 1130 Data Center Server Racks (matching ply_cam_north.png & IMG_2245.png)
+     */
+    createDataCenterRackRow(rackCount = 4) {
+        const group = new THREE.Group();
+        const rackW = 0.72;
+        const rackH = 2.15;
+        const rackD = 1.02;
+        const frontMat = this.materials.get('serverRackFront');
+        const bodyMat = this.materials.get('monitorPlastic');
+        const frameMat = this.materials.get('handrail');
+
+        for (let i = 0; i < rackCount; i++) {
+            const rx = (i - (rackCount - 1) / 2) * (rackW + 0.03);
+            const rack = new THREE.Group();
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(rackW, rackH, rackD), bodyMat);
+            body.position.y = rackH / 2;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            rack.add(body);
+
+            // White/silver vertical side rails (signature look in ply_cam_north.png)
+            [-rackW / 2 + 0.04, rackW / 2 - 0.04].forEach(px => {
+                const pillarF = new THREE.Mesh(new THREE.BoxGeometry(0.08, rackH, 0.04), frameMat);
+                pillarF.position.set(px, rackH / 2, rackD / 2 + 0.01);
+                rack.add(pillarF);
+
+                const pillarB = new THREE.Mesh(new THREE.BoxGeometry(0.08, rackH, 0.04), frameMat);
+                pillarB.position.set(px, rackH / 2, -rackD / 2 - 0.01);
+                rack.add(pillarB);
+            });
+
+            // Front & Rear Perforated Server Doors with LED telemetry
+            const doorF = new THREE.Mesh(new THREE.PlaneGeometry(rackW - 0.12, rackH - 0.08), frontMat);
+            doorF.position.set(0, rackH / 2, rackD / 2 + 0.015);
+            rack.add(doorF);
+
+            const doorB = new THREE.Mesh(new THREE.PlaneGeometry(rackW - 0.12, rackH - 0.08), frontMat);
+            doorB.position.set(0, rackH / 2, -rackD / 2 - 0.015);
+            doorB.rotation.y = Math.PI;
+            rack.add(doorB);
+
+            rack.position.x = rx;
+            group.add(rack);
+        }
+
+        // Overhead Cable Runner Tray above rack row
+        const totalW = rackCount * (rackW + 0.03);
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(totalW, 0.08, 0.35), this.materials.get('cubicleTrim'));
+        tray.position.set(0, rackH + 0.22, 0);
+        group.add(tray);
+
+        return group;
+    }
+
+    /**
+     * Industrial Liebert CRAC Air Conditioning Unit (from ply_cam_south.png & ply_cam_east.png)
+     */
+    createCRACUnit(w = 2.6, h = 2.15, d = 0.90) {
+        const group = new THREE.Group();
+        const cracMat = this.materials.get('cracUnit');
+        const darkMat = this.materials.get('deskLegs');
+
+        const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cracMat);
+        body.position.y = h / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        group.add(body);
+
+        const grille = new THREE.Mesh(new THREE.BoxGeometry(w - 0.2, 0.55, 0.04), darkMat);
+        grille.position.set(0, 0.35, d / 2 + 0.01);
+        group.add(grille);
+
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.03), this.materials.get('monitorScreen'));
+        panel.position.set(-w * 0.22, 1.55, d / 2 + 0.015);
+        group.add(panel);
+
+        [-0.12, 0.12].forEach(px => {
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.5, 10), darkMat);
+            pipe.position.set(w / 2 + 0.15 + px, 1.75, -0.15);
+            group.add(pipe);
+        });
+
+        return group;
+    }
+
+    /**
+     * Gray High-Voltage PDU / UPS Cabinet with Cardboard Box on Floor (ply_cam_east.png!)
+     */
+    createPDUCabinetWithBox() {
+        const group = new THREE.Group();
+        const pdu = new THREE.Mesh(new THREE.BoxGeometry(0.95, 2.15, 0.85), this.materials.get('filingCabinet'));
+        pdu.position.y = 1.075;
+        pdu.castShadow = true;
+        group.add(pdu);
+
+        const box = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.36), this.materials.get('woodDoor'));
+        box.position.set(-0.78, 0.14, 0.05);
+        box.rotation.y = 0.15;
+        group.add(box);
+
+        return group;
+    }
+
+    /**
+     * 1130 Data Center Double Oak Doors with Glass, Holiday Wreath, Fire Suppression Panel & Rolling Step Stool (ply_cam_west.png!)
+     */
+    createDataCenterEntranceAssembly() {
+        const group = new THREE.Group();
+        const woodMat = this.materials.get('woodDoor');
+        const glassMat = this.materials.get('glass');
+        const trimMat = this.materials.get('cubicleTrim');
+        const redMat = this.materials.get('stairCarpet');
+        const greenMat = this.materials.get('plantLeaves');
+
+        const header = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 2.3), woodMat);
+        header.position.set(0, 2.26, 0);
+        group.add(header);
+
+        [-1.05, 1.05].forEach((dz, idx) => {
+            const doorPivot = new THREE.Group();
+            doorPivot.position.set(0, 0, dz);
+
+            const doorW = 1.02;
+            const doorH = 2.20;
+            const zDir = idx === 0 ? 1 : -1;
+
+            const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.06, doorH, doorW), woodMat);
+            leaf.position.set(0, doorH / 2, zDir * (doorW / 2));
+            doorPivot.add(leaf);
+
+            const win = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.35, 0.56), glassMat);
+            win.position.set(0, 1.32, zDir * (doorW / 2));
+            doorPivot.add(win);
+
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.14), trimMat);
+            handle.position.set(0, 1.02, zDir * (doorW - 0.12));
+            doorPivot.add(handle);
+
+            if (idx === 1) {
+                const wreath = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.055, 8, 16), greenMat);
+                wreath.rotation.y = Math.PI / 2;
+                wreath.position.set(0.05, 1.38, zDir * (doorW / 2));
+                doorPivot.add(wreath);
+
+                const bow = new THREE.Mesh(new THREE.SphereGeometry(0.065, 8, 8), redMat);
+                bow.position.set(0.07, 1.54, zDir * (doorW / 2));
+                doorPivot.add(bow);
+            }
+
+            doorPivot.rotation.y = idx === 0 ? -1.25 : 1.25;
+            group.add(doorPivot);
+        });
+
+        // Wall-Mounted Fire Alarm Bell, Pull Station & Extinguisher (ply_cam_west.png)
+        const bell = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), redMat);
+        bell.position.set(0.08, 2.28, 1.55);
+        group.add(bell);
+
+        const pullBox = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.14), redMat);
+        pullBox.position.set(0.08, 1.38, 1.55);
+        group.add(pullBox);
+
+        const ext = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.38, 12), redMat);
+        ext.position.set(0.10, 0.85, 1.55);
+        group.add(ext);
+
+        // Gray 2-Step Round Rolling Stool ("Kik-Step" on floor next to door in ply_cam_west.png!)
+        const stool = new THREE.Group();
+        const stoolMat = this.materials.get('spineCap');
+        const baseTier = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.22, 0.18, 14), stoolMat);
+        baseTier.position.y = 0.09;
+        stool.add(baseTier);
+        const topTier = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.18, 14), stoolMat);
+        topTier.position.y = 0.26;
+        stool.add(topTier);
+        stool.position.set(0.32, 0, 1.55);
+        group.add(stool);
+
+        return group;
+    }
+
     createSlimMonitor() {
         const group = new THREE.Group();
         const plasticMat = this.materials.get('monitorPlastic');
         const screenMat = this.materials.get('monitorScreen');
 
-        // Circular Stand Base
         const base = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.015, 16), plasticMat);
         base.position.y = 0.008;
         group.add(base);
 
-        // Articulated Arm
         const arm = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.26, 0.035), plasticMat);
         arm.position.set(0, 0.14, -0.02);
         group.add(arm);
 
-        // Ultra-thin Bezel Screen (16:9)
         const w = 0.58;
         const h = 0.36;
         const bezel = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), plasticMat);
@@ -152,18 +440,15 @@ export class OfficeProps {
         const potMat = this.materials.get('plantPot');
         const leafMat = this.materials.get('plantLeaves');
 
-        // Ceramic Pot
         const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.045, 0.10, 16), potMat);
         pot.position.y = 0.05;
         pot.castShadow = true;
         group.add(pot);
 
-        // Soil
-        const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 16), new THREE.MeshStandardMaterial({ color: 0x3d2716, roughness: 0.9 }));
+        const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 16), this.materials.get('deskLegs'));
         soil.position.y = 0.098;
         group.add(soil);
 
-        // Succulent Leaves Cluster
         for (let i = 0; i < 7; i++) {
             const angle = (i / 7) * Math.PI * 2;
             const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.11, 8), leafMat);
@@ -181,17 +466,12 @@ export class OfficeProps {
 
     createFramedPhoto() {
         const group = new THREE.Group();
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.5 });
-        const photoMat = new THREE.MeshStandardMaterial({ color: 0xf5eedc, roughness: 0.3 });
-
-        // Frame
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.015), frameMat);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.015), this.materials.get('woodDoor'));
         frame.position.y = 0.08;
         frame.rotation.x = -0.15;
         group.add(frame);
 
-        // Photo Face
-        const photo = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.13), photoMat);
+        const photo = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.13), this.materials.get('plantPot'));
         photo.position.set(0, 0.08, 0.01);
         photo.rotation.x = -0.15;
         group.add(photo);
@@ -204,13 +484,11 @@ export class OfficeProps {
         const mat = this.materials.get('filingCabinet');
         const handleMat = this.materials.get('cubicleTrim');
 
-        // Pedestal Body (3-Drawer Mobile Cabinet)
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.62, 0.55), mat);
         body.position.y = 0.31;
         body.castShadow = true;
         group.add(body);
 
-        // Drawer seams & handles
         [0.14, 0.34, 0.52].forEach(y => {
             const seam = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.005, 0.01), this.materials.get('deskLegs'));
             seam.position.set(0, y, 0.28);
@@ -230,7 +508,6 @@ export class OfficeProps {
         const metalMat = this.materials.get('deskLegs');
         const chromeMat = this.materials.get('cubicleTrim');
 
-        // 1. 5-Star Caster Base
         for (let i = 0; i < 5; i++) {
             const angle = (i / 5) * Math.PI * 2;
             const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.30), metalMat);
@@ -239,24 +516,20 @@ export class OfficeProps {
             leg.position.set(Math.cos(angle) * 0.15, 0.06, Math.sin(angle) * 0.15);
             group.add(leg);
 
-            // Caster wheel
             const wheel = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), metalMat);
             wheel.position.set(Math.cos(angle) * 0.30, 0.025, Math.sin(angle) * 0.30);
             group.add(wheel);
         }
 
-        // 2. Gas Lift Cylinder
         const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.32, 12), chromeMat);
         cylinder.position.y = 0.22;
         group.add(cylinder);
 
-        // 3. Contoured Seat Cushion
         const seat = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.07, 0.48), meshMat);
         seat.position.y = 0.44;
         seat.castShadow = true;
         group.add(seat);
 
-        // 4. Ergonomic Curved Mesh Backrest
         const backGeo = new THREE.BoxGeometry(0.44, 0.52, 0.04);
         const back = new THREE.Mesh(backGeo, meshMat);
         back.position.set(0, 0.72, -0.22);
@@ -264,13 +537,11 @@ export class OfficeProps {
         back.castShadow = true;
         group.add(back);
 
-        // Lumbar Support Spine (Vertical metal spine)
         const spine = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.03), metalMat);
         spine.position.set(0, 0.65, -0.25);
         group.add(spine);
 
-        // 5. 3D Armrests
-        [[-0.26, 1], [0.26, -1]].forEach(([ax, side]) => {
+        [[-0.26, 1], [0.26, -1]].forEach(([ax]) => {
             const armPost = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.24), metalMat);
             armPost.position.set(ax, 0.54, -0.02);
             group.add(armPost);
@@ -304,12 +575,12 @@ export class OfficeProps {
         const group = new THREE.Group();
         const bottle = new THREE.Mesh(
             new THREE.CylinderGeometry(0.038, 0.038, 0.22, 16),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75, roughness: 0.2 })
+            this.materials.get('fbGreen')
         );
         bottle.position.y = 0.11;
         group.add(bottle);
 
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.035, 16), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.035, 16), this.materials.get('plantPot'));
         cap.position.y = 0.23;
         group.add(cap);
 
@@ -348,22 +619,16 @@ export class OfficeProps {
         return group;
     }
 
-    /**
-     * Builds the Executive Conference Room / Command Center with Server Wall (matching right side of reference)
-     */
-    createCommandCenter(width = 8.5, depth = 6.2, height = 3.2) {
+    createCommandCenter(width = 8.5, depth = 6.2) {
         const group = new THREE.Group();
         const trimMat = this.materials.get('cubicleTrim');
-        const glassMat = this.materials.get('glass');
 
-        // 1. Large Oval Boardroom Table
         const tableGeo = new THREE.BoxGeometry(4.6, 0.08, 1.8);
         const table = new THREE.Mesh(tableGeo, this.materials.get('confTableWood'));
         table.position.set(0, 0.76, 0);
         table.castShadow = true;
         group.add(table);
 
-        // 2 Heavy Pedestal Columns
         const col1 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.72, 16), trimMat);
         col1.position.set(-1.4, 0.36, 0);
         group.add(col1);
@@ -371,29 +636,6 @@ export class OfficeProps {
         col2.position.set(1.4, 0.36, 0);
         group.add(col2);
 
-        // 8 Executive Mesh Chairs
-        for (let i = 0; i < 3; i++) {
-            const x = -1.3 + i * 1.3;
-            const cN = this.createErgonomicMeshChair();
-            cN.position.set(x, 0, -1.25);
-            cN.rotation.y = 0;
-            group.add(cN);
-
-            const cS = this.createErgonomicMeshChair();
-            cS.position.set(x, 0, 1.25);
-            cS.rotation.y = Math.PI;
-            group.add(cS);
-        }
-        const cW = this.createErgonomicMeshChair();
-        cW.position.set(-2.6, 0, 0);
-        cW.rotation.y = Math.PI / 2;
-        group.add(cW);
-        const cE = this.createErgonomicMeshChair();
-        cE.position.set(2.6, 0, 0);
-        cE.rotation.y = -Math.PI / 2;
-        group.add(cE);
-
-        // 2. High-Tech Multi-Screen Server Video Wall on Rear Wall
         const srvWallGeo = new THREE.BoxGeometry(4.8, 2.2, 0.08);
         const srvWall = new THREE.Mesh(srvWallGeo, this.materials.get('serverWall'));
         srvWall.position.set(0, 1.85, depth / 2 - 0.05);
@@ -402,16 +644,11 @@ export class OfficeProps {
         return group;
     }
 
-    /**
-     * Builds the Red Carpeted Stairwell Alcove & Clock (matching center background of reference)
-     */
     createBackgroundStaircase() {
         const group = new THREE.Group();
         const carpetMat = this.materials.get('stairCarpet');
         const railMat = this.materials.get('handrail');
-        const wallMat = this.materials.get('wall');
 
-        // Steps ascending into background
         for (let i = 0; i < 8; i++) {
             const stepGeo = new THREE.BoxGeometry(2.4, 0.18, 0.35);
             const step = new THREE.Mesh(stepGeo, carpetMat);
@@ -419,8 +656,7 @@ export class OfficeProps {
             group.add(step);
         }
 
-        // Silver Handrails
-        [[-1.15, 1], [1.15, -1]].forEach(([rx, s]) => {
+        [[-1.15, 1], [1.15, -1]].forEach(([rx]) => {
             const railGeo = new THREE.CylinderGeometry(0.025, 0.025, 3.2, 12);
             const rail = new THREE.Mesh(railGeo, railMat);
             rail.rotation.x = Math.PI / 4;
@@ -428,25 +664,23 @@ export class OfficeProps {
             group.add(rail);
         });
 
-        // Round Office Clock above entrance
         const clockGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.04, 24);
-        const clockMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.3 });
-        const clock = new THREE.Mesh(clockGeo, clockMat);
+        const clock = new THREE.Mesh(clockGeo, this.materials.get('monitorPlastic'));
         clock.rotation.x = Math.PI / 2;
         clock.position.set(0, 2.7, 0.1);
         group.add(clock);
 
-        const face = new THREE.Mesh(new THREE.CircleGeometry(0.20, 24), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        const face = new THREE.Mesh(new THREE.CircleGeometry(0.20, 24), this.materials.get('plantPot'));
         face.position.set(0, 2.7, 0.125);
         group.add(face);
 
         return group;
     }
 
-    createWhiteboard(width = 1.4, height = 0.9) {
+    createWhiteboard(width = 1.4, height = 0.9, variant = 'whiteboard') {
         const group = new THREE.Group();
         const frameMat = this.materials.get('cubicleTrim');
-        const boardMat = this.materials.get('whiteboard');
+        const boardMat = this.materials.get(variant) || this.materials.get('whiteboard');
 
         const frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.06, height + 0.06, 0.02), frameMat);
         group.add(frame);

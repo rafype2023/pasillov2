@@ -192,6 +192,12 @@ export class HUD {
 
         const mapX = (x) => ((x + 28) / 56) * (w - 16) + 8;
         const mapY = (z) => ((z + 20) / 40) * (h - 16) + 8;
+
+        // Highlight FirstBank 1130 Data Center Zone (from 3DGS.ply)
+        const dcX1 = mapX(15.8), dcX2 = mapX(26.8), dcY1 = mapY(-6.8), dcY2 = mapY(17.5);
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
+        ctx.fillRect(dcX1, dcY1, dcX2 - dcX1, dcY2 - dcY1);
+
         ctx.fillStyle = '#6a8988';
         for (const box of this.game.floorPlan.colliders) {
             ctx.fillRect(mapX(box.min.x), mapY(box.min.z), Math.max(1, mapX(box.max.x)-mapX(box.min.x)), Math.max(1, mapY(box.max.z)-mapY(box.min.z)));

@@ -20,7 +20,7 @@ export class CovidLevel {
             { name: 'Lounge / Breakroom', pos: this.floorPlan.loungePoint.clone() },
             { name: 'Oficina Ejecutiva Norte', pos: new THREE.Vector3(-24, 0, -16) },
             { name: 'Pasillo Ala Oeste', pos: new THREE.Vector3(-22, 0, 12) },
-            { name: 'Hub Sur de Cubículos', pos: new THREE.Vector3(18, 0, 14) },
+            { name: '1130 Data Center (Server Room)', pos: new THREE.Vector3(18, 0, 14) },
             { name: 'Sala de Conferencias', pos: new THREE.Vector3(-6, 0, -14) },
             { name: 'Vestíbulo Sur', pos: new THREE.Vector3(6, 0, 16) },
             { name: 'Corredor Central', pos: new THREE.Vector3(-10, 0, 6) }
