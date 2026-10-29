@@ -69,10 +69,10 @@ export class LoungeRaceLevel {
 
     spawnCoffee() {
         const coffeePositions = [
-            new THREE.Vector3(-10, 0, 6),
-            new THREE.Vector3(-2, 0, 6),
-            new THREE.Vector3(6, 0, 4),
-            new THREE.Vector3(12, 0, 0)
+            new THREE.Vector3(-18, 0, -4),
+            new THREE.Vector3(-10, 0, -9),
+            new THREE.Vector3(-2, 0, 8),
+            new THREE.Vector3(8, 0, -9)
         ];
 
         coffeePositions.forEach(pos => {

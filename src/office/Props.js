@@ -747,9 +747,100 @@ export class OfficeProps {
         bar.position.set(0, doorHeight * 0.45, 0.05);
         group.add(bar);
 
-        const sign = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.08), new THREE.MeshStandardMaterial({ color: 0x00ff44, emissive: 0x00ee33, emissiveIntensity: 0.9 }));
+        const sign = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.08), this.materials.get('exitSignRed'));
         sign.position.set(0, doorHeight + 0.2, 0.06);
         group.add(sign);
+
+        return group;
+    }
+
+    /**
+     * Long Green-Tablecloth Buffet Table along the East Window Gallery (splat_aligned_full.png & splat_cam_lounge_south.png)
+     */
+    createGreenBuffetTable(length = 4.2, width = 0.95) {
+        const group = new THREE.Group();
+        const clothMat = this.materials.get('greenTablecloth');
+        const chromeMat = this.materials.get('handrail');
+        const whiteMat = this.materials.get('plantPot');
+        const redMat = this.materials.get('stairCarpet');
+        const woodMat = this.materials.get('woodDoor');
+        const h = 0.78;
+
+        // Draped green tablecloth table body
+        const top = new THREE.Mesh(new THREE.BoxGeometry(width, h, length), clothMat);
+        top.position.y = h / 2;
+        top.castShadow = true;
+        top.receiveShadow = true;
+        group.add(top);
+
+        // Chafing dishes, trays, bowls, and snack platters along the table
+        [-1.35, -0.45, 0.45].forEach(zPos => {
+            const tray = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.12, 0.62), chromeMat);
+            tray.position.set(0, h + 0.06, zPos);
+            group.add(tray);
+        });
+
+        const platter = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.25, 0.05, 16), woodMat);
+        platter.position.set(0.05, h + 0.03, 1.25);
+        group.add(platter);
+
+        [-1.75, 1.65].forEach(zPos => {
+            const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 14), whiteMat);
+            stack.position.set(-0.15, h + 0.06, zPos);
+            group.add(stack);
+
+            const soda = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.28, 12), redMat);
+            soda.position.set(0.18, h + 0.14, zPos);
+            group.add(soda);
+        });
+
+        return group;
+    }
+
+    /**
+     * Cluster of Red Heart & Party Foil Balloons inside Guillo's North-West Cubicle (splat_aligned_full.png & splat_cam_west_corridor_south.png)
+     */
+    createCubicleRedBalloons() {
+        const group = new THREE.Group();
+        const redMat = this.materials.get('redBalloon');
+        const stringMat = this.materials.get('cubicleTrim');
+
+        const offsets = [
+            [0, 1.95, 0, 0.22],
+            [-0.22, 2.12, 0.14, 0.20],
+            [0.20, 2.05, -0.12, 0.19],
+            [-0.08, 1.78, -0.18, 0.17],
+            [0.14, 2.24, 0.10, 0.21]
+        ];
+
+        offsets.forEach(([bx, by, bz, r]) => {
+            const balloon = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), redMat);
+            balloon.scale.set(1.1, 1.05, 0.65);
+            balloon.position.set(bx, by, bz);
+            group.add(balloon);
+
+            const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, by - 0.85, 6), stringMat);
+            cord.position.set(bx * 0.5, 0.85 + (by - 0.85) / 2, bz * 0.5);
+            group.add(cord);
+        });
+
+        return group;
+    }
+
+    /**
+     * Circular Red "FELIZ CUMPLEAÑOS" & Blue "NUESTROS VALORES" Badges on the Lounge End-Wall (splat_cam_lounge_north.png)
+     */
+    createLoungeEndWallBadges() {
+        const group = new THREE.Group();
+        const cumpDisk = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.03, 24), this.materials.get('cumpleanosBadge'));
+        cumpDisk.rotation.z = Math.PI / 2;
+        cumpDisk.position.set(0, 1.85, 0);
+        group.add(cumpDisk);
+
+        const valDisk = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 24), this.materials.get('valoresBadge'));
+        valDisk.rotation.z = Math.PI / 2;
+        valDisk.position.set(0, 0.82, 0.15);
+        group.add(valDisk);
 
         return group;
     }

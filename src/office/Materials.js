@@ -651,6 +651,56 @@ class OfficeMaterials {
             color: 0x2e7d32,
             roughness: 0.6
         });
+
+        // Splat.ply Office Details: Green Buffet Tablecloth, Red Heart Balloons, Cumpleaños & Valores Wall Badges, and Red EXIT Sign
+        this.materials.greenTablecloth = new THREE.MeshStandardMaterial({
+            color: 0x165b33,
+            roughness: 0.78,
+            metalness: 0.05
+        });
+
+        this.materials.redBalloon = new THREE.MeshStandardMaterial({
+            color: 0xdc2626,
+            roughness: 0.18,
+            metalness: 0.35
+        });
+
+        this.materials.exitSignRed = new THREE.MeshStandardMaterial({
+            color: 0xff2222,
+            emissive: 0xff1111,
+            emissiveIntensity: 1.2,
+            roughness: 0.3
+        });
+
+        // Round Red "CUMPLEAÑOS" Wall Badge (splat_cam_lounge_north.png)
+        const cumpCanvas = document.createElement('canvas');
+        cumpCanvas.width = 256; cumpCanvas.height = 256;
+        const cCtx = cumpCanvas.getContext('2d');
+        cCtx.fillStyle = '#991b1b';
+        cCtx.beginPath(); cCtx.arc(128, 128, 122, 0, Math.PI * 2); cCtx.fill();
+        cCtx.strokeStyle = '#fca5a5'; cCtx.lineWidth = 10;
+        cCtx.beginPath(); cCtx.arc(128, 128, 110, 0, Math.PI * 2); cCtx.stroke();
+        cCtx.fillStyle = '#ffffff'; cCtx.font = 'bold 28px sans-serif'; cCtx.textAlign = 'center';
+        cCtx.fillText('FELIZ', 128, 105);
+        cCtx.fillText('CUMPLEAÑOS', 128, 148);
+        const cumpTex = new THREE.CanvasTexture(cumpCanvas);
+        cumpTex.colorSpace = THREE.SRGBColorSpace;
+        this.materials.cumpleanosBadge = new THREE.MeshStandardMaterial({ map: cumpTex, roughness: 0.4 });
+
+        // Round Blue "VALORES" Wall Badge (splat_cam_lounge_north.png)
+        const valCanvas = document.createElement('canvas');
+        valCanvas.width = 256; valCanvas.height = 256;
+        const vCtx = valCanvas.getContext('2d');
+        vCtx.fillStyle = '#0284c7';
+        vCtx.beginPath(); vCtx.arc(128, 128, 122, 0, Math.PI * 2); vCtx.fill();
+        vCtx.strokeStyle = '#bae6fd'; vCtx.lineWidth = 10;
+        vCtx.beginPath(); vCtx.arc(128, 128, 110, 0, Math.PI * 2); vCtx.stroke();
+        vCtx.fillStyle = '#ffffff'; vCtx.font = 'bold 28px sans-serif'; vCtx.textAlign = 'center';
+        vCtx.fillText('NUESTROS', 128, 108);
+        vCtx.fillText('VALORES', 128, 148);
+        const valTex = new THREE.CanvasTexture(valCanvas);
+        valTex.colorSpace = THREE.SRGBColorSpace;
+        this.materials.valoresBadge = new THREE.MeshStandardMaterial({ map: valTex, roughness: 0.4 });
     }
 
     get(name) {

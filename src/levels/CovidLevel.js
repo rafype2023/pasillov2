@@ -15,15 +15,15 @@ export class CovidLevel {
         this.isComplete = false;
         this.isFailed = false;
 
-        // Potential Safe Zone locations across Floor 3
+        // Potential Safe Zone locations across the splat.ply Office & 1130 Data Center
         this.safeLocations = [
-            { name: 'Lounge / Breakroom', pos: this.floorPlan.loungePoint.clone() },
-            { name: 'Oficina Ejecutiva Norte', pos: new THREE.Vector3(-24, 0, -16) },
-            { name: 'Pasillo Ala Oeste', pos: new THREE.Vector3(-22, 0, 12) },
+            { name: 'Lounge / Sillones Verdes (NE)', pos: this.floorPlan.loungePoint.clone() },
+            { name: 'Recepción Noroeste', pos: new THREE.Vector3(-24, 0, -16) },
+            { name: 'Cubículo de Guillo (Globos Rojos)', pos: new THREE.Vector3(-11.8, 0, -11.5) },
+            { name: 'Galería del Buffet Verde (Este)', pos: new THREE.Vector3(17.5, 0, -1.2) },
             { name: '1130 Data Center (Server Room)', pos: new THREE.Vector3(18, 0, 14) },
-            { name: 'Sala de Conferencias', pos: new THREE.Vector3(-6, 0, -14) },
-            { name: 'Vestíbulo Sur', pos: new THREE.Vector3(6, 0, 16) },
-            { name: 'Corredor Central', pos: new THREE.Vector3(-10, 0, 6) }
+            { name: 'Bahía Central Norte', pos: new THREE.Vector3(-6, 0, -14) },
+            { name: 'Pasillo Ala Oeste', pos: new THREE.Vector3(-19, 0, 10) }
         ];
 
         this.currentLocationIndex = 0;
@@ -42,27 +42,27 @@ export class CovidLevel {
         this.player.spawn(this.floorPlan.spawnPoint);
         this.player.infection = 0;
 
-        // 1. Spawn Sneezer NPCs patrolling cubicles & stalking player
-        const wp1 = [new THREE.Vector3(-4, 0, 4), new THREE.Vector3(-4, 0, 16), new THREE.Vector3(-14, 0, 16), new THREE.Vector3(-14, 0, 4)];
-        const s1 = new SneezerNPC(this.scene, new THREE.Vector3(-4, 0, 4), wp1, this.particles);
+        // 1. Spawn Sneezer NPCs patrolling splat.ply corridors & stalking player
+        const wp1 = [new THREE.Vector3(-2, 0, -8), new THREE.Vector3(-2, 0, 8), new THREE.Vector3(-17, 0, 8), new THREE.Vector3(-17, 0, -8)];
+        const s1 = new SneezerNPC(this.scene, new THREE.Vector3(-2, 0, 8), wp1, this.particles);
         this.npcs.push(s1);
 
-        const wp2 = [new THREE.Vector3(-20, 0, -12), new THREE.Vector3(-20, 0, 10), new THREE.Vector3(-26, 0, 10), new THREE.Vector3(-26, 0, -12)];
-        const s2 = new SneezerNPC(this.scene, new THREE.Vector3(-20, 0, -12), wp2, this.particles);
+        const wp2 = [new THREE.Vector3(-19, 0, -10), new THREE.Vector3(-19, 0, 10), new THREE.Vector3(-8, 0, 10), new THREE.Vector3(-8, 0, -10)];
+        const s2 = new SneezerNPC(this.scene, new THREE.Vector3(-19, 0, -10), wp2, this.particles);
         this.npcs.push(s2);
 
-        const wp3 = [new THREE.Vector3(10, 0, 8), new THREE.Vector3(22, 0, 8), new THREE.Vector3(22, 0, 16), new THREE.Vector3(10, 0, 16)];
-        const s3 = new SneezerNPC(this.scene, new THREE.Vector3(10, 0, 8), wp3, this.particles);
+        const wp3 = [new THREE.Vector3(16, 0, -8), new THREE.Vector3(21, 0, -2), new THREE.Vector3(18, 0, 12), new THREE.Vector3(3, 0, 10)];
+        const s3 = new SneezerNPC(this.scene, new THREE.Vector3(16, 0, -8), wp3, this.particles);
         this.npcs.push(s3);
 
-        // 2. Spawn Fernan, Alejandro, and Hector
-        const fernan = new FernanNPC(this.scene, new THREE.Vector3(-6, 0, 6), this.particles);
+        // 2. Spawn Fernan, Alejandro, and Hector in the splat.ply corridors
+        const fernan = new FernanNPC(this.scene, new THREE.Vector3(-8, 0, -8), this.particles);
         this.npcs.push(fernan);
 
-        const alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-10, 0, 2), this.particles);
+        const alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-12, 0, 8), this.particles);
         this.npcs.push(alejandro);
 
-        const hector = new HectorNPC(this.scene, new THREE.Vector3(4, 0, 4));
+        const hector = new HectorNPC(this.scene, new THREE.Vector3(6, 0, -8));
         this.npcs.push(hector);
 
         // 3. Spawn Pickups
@@ -95,12 +95,12 @@ export class CovidLevel {
 
     spawnPickups() {
         const sanitizerPositions = [
-            new THREE.Vector3(-8, 0, 10),
-            new THREE.Vector3(-18, 0, -4),
-            new THREE.Vector3(0, 0, 8),
-            new THREE.Vector3(14, 0, 12),
-            new THREE.Vector3(-14, 0, 14),
-            new THREE.Vector3(20, 0, -2)
+            new THREE.Vector3(-9, 0, 8),
+            new THREE.Vector3(-19, 0, -4),
+            new THREE.Vector3(0, 0, 6),
+            new THREE.Vector3(17.5, 0, -5),
+            new THREE.Vector3(-11.8, 0, -11.2),
+            new THREE.Vector3(18, 0, 10)
         ];
 
         sanitizerPositions.forEach(pos => {
@@ -111,9 +111,9 @@ export class CovidLevel {
         });
 
         const maskPositions = [
-            new THREE.Vector3(-12, 0, 0),
-            new THREE.Vector3(6, 0, 6),
-            new THREE.Vector3(-24, 0, 4)
+            new THREE.Vector3(-12, 0, -8),
+            new THREE.Vector3(8, 0, 8),
+            new THREE.Vector3(-22, 0, -12)
         ];
 
         maskPositions.forEach(pos => {

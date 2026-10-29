@@ -193,8 +193,13 @@ export class HUD {
         const mapX = (x) => ((x + 28) / 56) * (w - 16) + 8;
         const mapY = (z) => ((z + 20) / 40) * (h - 16) + 8;
 
+        // Highlight East Window Lounge & Green Buffet Gallery (from splat.ply)
+        const lgX1 = mapX(12.2), lgX2 = mapX(26.8), lgY1 = mapY(-18.0), lgY2 = mapY(2.2);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.16)';
+        ctx.fillRect(lgX1, lgY1, lgX2 - lgX1, lgY2 - lgY1);
+
         // Highlight FirstBank 1130 Data Center Zone (from 3DGS.ply)
-        const dcX1 = mapX(15.8), dcX2 = mapX(26.8), dcY1 = mapY(-6.8), dcY2 = mapY(17.5);
+        const dcX1 = mapX(15.8), dcX2 = mapX(26.8), dcY1 = mapY(2.2), dcY2 = mapY(17.5);
         ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
         ctx.fillRect(dcX1, dcY1, dcX2 - dcX1, dcY2 - dcY1);
 
