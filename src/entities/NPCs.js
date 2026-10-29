@@ -294,9 +294,9 @@ export class SneezerNPC extends BaseNPC {
         this.waypoints = waypoints;
         this.currentWpIndex = 0;
         this.particles = particles;
-        this.sneezeTimer = 2.0 + Math.random() * 2.0;
-        this.speed = 2.8;
-        this.detectionRange = 25.0;
+        this.sneezeTimer = 6.0 + Math.random() * 4.0;
+        this.speed = 1.15;
+        this.detectionRange = 8.5;
     }
 
     update(delta, camera, player) {
@@ -341,10 +341,10 @@ export class SneezerNPC extends BaseNPC {
             HumanoidBuilder.applyPose(this.modelParts, 'idle', this.animTime);
         }
 
-        // Sneeze attack timer
+        // Sneeze attack timer (slowed down so player can explore the office)
         this.sneezeTimer -= delta;
         if (this.sneezeTimer <= 0) {
-            this.sneezeTimer = 2.5 + Math.random() * 2.5;
+            this.sneezeTimer = 6.5 + Math.random() * 4.0;
             this.triggerSneeze(player);
         }
     }
@@ -376,11 +376,11 @@ export class HostileNPC extends BaseNPC {
         super(scene, 'Tactical Hunter 🏹', 0x8a929b, startPos, null, true); // Cyber Android Cyborg model
         this.waypoints = waypoints;
         this.currentWpIndex = 0;
-        this.speed = 3.4;
-        this.shootTimer = 1.6 + Math.random();
-        this.shootCooldown = 2.4;
-        this.arrowSpeed = 16.0;
-        this.detectionRange = 26.0;
+        this.speed = 1.35;
+        this.shootTimer = 4.5 + Math.random() * 2.0;
+        this.shootCooldown = 5.5;
+        this.arrowSpeed = 7.5;
+        this.detectionRange = 12.0;
 
         // Equip Recurve Bow in right arm
         const bowGroup = new THREE.Group();
@@ -437,7 +437,7 @@ export class HostileNPC extends BaseNPC {
             }
 
             this.shootTimer -= delta;
-            if (this.shootTimer <= 0 && dist < 18.0) {
+            if (this.shootTimer <= 0 && dist < 13.0) {
                 this.shootTimer = this.shootCooldown;
                 this.fireArrowAtPlayer(player, level);
             }

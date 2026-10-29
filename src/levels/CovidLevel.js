@@ -28,8 +28,8 @@ export class CovidLevel {
 
         this.currentLocationIndex = 0;
         this.safeStationPos = this.floorPlan.loungePoint.clone();
-        this.safeRelocateTimer = 45.0; // Changes every 45 seconds!
-        this.maxRelocateTime = 45.0;
+        this.safeRelocateTimer = 90.0; // Changes every 90 seconds so player can explore!
+        this.maxRelocateTime = 90.0;
     }
 
     start() {
@@ -205,7 +205,7 @@ export class CovidLevel {
             this.npcs.forEach(npc => {
                 if (npc instanceof SneezerNPC) {
                     const dist = npc.position.distanceTo(this.player.position);
-                    if (dist < 1.8) {
+                    if (dist < 1.1) {
                         isInViralCloud = true;
                     }
                 }
@@ -213,13 +213,13 @@ export class CovidLevel {
         }
 
         if (isInViralCloud && !this.player.isMasked) {
-            // Sneeze / Virus hits our hero: Stamina drains rapidly!
-            this.player.stamina = Math.max(0, this.player.stamina - delta * 42);
+            // Gentle drain so the player has plenty of time to explore the office
+            this.player.stamina = Math.max(0, this.player.stamina - delta * 10);
             
             if (this.player.stamina <= 0) {
-                this.player.infection = Math.min(100, this.player.infection + delta * 32);
+                this.player.infection = Math.min(100, this.player.infection + delta * 6);
             } else {
-                this.player.infection = Math.min(100, this.player.infection + delta * 12);
+                this.player.infection = Math.min(100, this.player.infection + delta * 2.5);
             }
             sounds.playAlert();
         }

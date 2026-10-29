@@ -40,17 +40,17 @@ export class LoungeRaceLevel {
         this.player.spawn(startLine);
         this.player.stamina = 100;
 
-        // 2. Spawn Racer NPCs side-by-side with balanced competitive speeds
+        // 2. Spawn Racer NPCs side-by-side with relaxed pace so player can explore the office
         this.fernan = new FernanNPC(this.scene, new THREE.Vector3(-20, 0, 10), this.particles);
-        this.fernan.speed = 3.8;
+        this.fernan.speed = 2.1;
         this.npcs.push(this.fernan);
 
         this.alejandro = new AlejandroNPC(this.scene, new THREE.Vector3(-16, 0, 10), this.particles);
-        this.alejandro.speed = 4.2;
+        this.alejandro.speed = 2.3;
         this.npcs.push(this.alejandro);
 
         this.hector = new HectorNPC(this.scene, new THREE.Vector3(-18, 0, 12));
-        this.hector.speed = 4.6;
+        this.hector.speed = 2.5;
         this.npcs.push(this.hector);
 
         this.racers = [

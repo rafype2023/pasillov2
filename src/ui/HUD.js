@@ -113,11 +113,13 @@ export class HUD {
             if (staminaLabel) staminaLabel.innerText = 'ENERGÍA';
             if (staminaVal) staminaVal.innerText = `${Math.round(player.stamina)}%`;
 
-            // 45-Second Safe Place Relocation Countdown
-            const timeLeft = Math.ceil(currentLevel.safeRelocateTimer || 45);
-            if (timerEl) timerEl.innerText = `00:${timeLeft.toString().padStart(2, '0')}`;
+            // 90-Second Safe Place Relocation Countdown
+            const timeLeft = Math.ceil(currentLevel.safeRelocateTimer || 90);
+            const minsLeft = Math.floor(timeLeft / 60);
+            const secsLeft = timeLeft % 60;
+            if (timerEl) timerEl.innerText = `${minsLeft.toString().padStart(2, '0')}:${secsLeft.toString().padStart(2, '0')}`;
             if (chaosLabel) chaosLabel.innerText = `CAMBIO EN ${timeLeft}s`;
-            if (statusSub) statusSub.innerText = `ESTACIÓN: ${currentLevel.currentLocationName || 'Lounge'} (45s)`;
+            if (statusSub) statusSub.innerText = `ESTACIÓN: ${currentLevel.currentLocationName || 'Lounge'} (90s)`;
         } else if (levelIndex === 1) { // Lounge Race
             const stam = Math.round(player.stamina);
             if (healthBar) healthBar.style.width = `100%`;
@@ -154,7 +156,7 @@ export class HUD {
                 if (chaosLabel) chaosLabel.innerText = `⏳ VENTAJA: ${headstart}s`;
                 if (statusSub) statusSub.innerText = `¡TIENES ${headstart}s PARA MOVERTE Y BUSCAR COBIJO!`;
             } else {
-                if (chaosLabel) chaosLabel.innerText = `FLECHAZOS: ${hits}/4`;
+                if (chaosLabel) chaosLabel.innerText = `FLECHAZOS: ${hits}/7`;
                 const rescued = currentLevel.rescuedColleagues || 0;
                 if (statusSub) statusSub.innerText = `COMPAÑEROS RESCATADOS: ${rescued}/3 | ESCALERAS DE EMERGENCIA`;
             }
@@ -291,7 +293,7 @@ export class HUD {
             message = 'No lograste llegar a tiempo al buffet del breakroom.';
         } else if (levelIndex === 2) {
             title = '¡Alcanzado por los Flechazos!';
-            message = 'Guillo recibió 4 flechazos y no pudo llegar a las escaleras de evacuación.';
+            message = 'Guillo recibió demasiados flechazos y no pudo llegar a las escaleras de evacuación.';
         }
 
         modal.style.display = 'flex';

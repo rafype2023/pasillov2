@@ -14,8 +14,8 @@ export class ActiveShooterLevel {
         this.arrows = [];
         this.rescuedColleagues = 0;
         this.totalColleagues = 3;
-        this.hitsReceived = 0; // 4 arrows = 100% defeat (25% per arrow)
-        this.headstartTimer = 8.0; // 8 seconds head start advantage for Guillo!
+        this.hitsReceived = 0;
+        this.headstartTimer = 15.0; // 15 seconds head start so player can explore the office!
         this.isComplete = false;
         this.isFailed = false;
         this.evacRouteArrows = [];
@@ -26,7 +26,7 @@ export class ActiveShooterLevel {
         this.isComplete = false;
         this.isFailed = false;
         this.hitsReceived = 0;
-        this.headstartTimer = 8.0; // 8s head start!
+        this.headstartTimer = 15.0; // 15s head start!
         this.rescuedColleagues = 0;
 
         // 1. Set Emergency Red Lighting & Start Siren
@@ -139,8 +139,8 @@ export class ActiveShooterLevel {
 
         this.arrows.push({
             mesh: arrowGroup,
-            velocity: direction.clone().multiplyScalar(15.0), // 15 m/s arrow velocity
-            life: 3.5
+            velocity: direction.clone().multiplyScalar(7.5), // Slower 7.5 m/s arrow velocity for easier dodging
+            life: 4.0
         });
     }
 
@@ -222,11 +222,11 @@ export class ActiveShooterLevel {
             const playerCenter = this.player.position.clone().add(new THREE.Vector3(0, playerTargetY, 0));
             const distToGuillo = arrowPos.distanceTo(playerCenter);
 
-            if (distToGuillo < 0.75) {
-                // ARROW HIT GUILLO! Reduce 25% stamina and health (4 arrows kill Guillo)
+            if (distToGuillo < 0.70) {
+                // Gentle arrow damage (15% per hit, 7 hits to defeat) so player can explore
                 this.hitsReceived++;
-                this.player.stamina = Math.max(0, this.player.stamina - 25);
-                this.player.health = Math.max(0, this.player.health - 25);
+                this.player.stamina = Math.max(0, this.player.stamina - 15);
+                this.player.health = Math.max(0, this.player.health - 15);
                 sounds.playArrowHit();
 
                 if (this.particles) {
@@ -236,8 +236,8 @@ export class ActiveShooterLevel {
                 this.scene.remove(arr.mesh);
                 this.arrows.splice(i, 1);
 
-                // Check defeat condition (4 hits / 0 stamina / 0 health)
-                if (this.player.stamina <= 0 || this.player.health <= 0 || this.hitsReceived >= 4) {
+                // Check defeat condition
+                if (this.player.stamina <= 0 || this.player.health <= 0 || this.hitsReceived >= 7) {
                     this.isFailed = true;
                     this.player.isDead = true;
                     sounds.stopSiren();
